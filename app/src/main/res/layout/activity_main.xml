@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <!--==========MAP======================-->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/maps"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"></androidx.fragment.app.FragmentContainerView>
+
+    <!--==========ROUTE LIST BUTTON======================-->
+    <Button
+        android:id="@+id/showRouteButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Show Routes"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        />
+
+    <!--==========ROUTE RECORD BUTTON======================-->
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Route Recording"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        />
+
+
+    <!--==========ROUTE SAVE DIALOG======================-->
+    <LinearLayout
+        android:id="@+id/routeSaveLayout"
+        android:layout_width="250dp"
+        android:layout_height="200dp"
+        android:background="@drawable/dialog_background"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.785">
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:text="Save route for later?"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_margin="1dp"/>
+        <!--ROUTE NAME TEXTBOX-->
+        <EditText
+            android:id="@+id/routeName"
+            android:layout_width="200dp"
+            android:layout_height="35dp"
+            android:layout_marginTop="20dp"
+            android:background='#6750A3'
+            android:ems="10"
+            android:hint="Enter Route Name"
+            android:gravity="center"
+            android:inputType="textPersonName"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#FFFFFF"
+            android:layout_margin="1dp"
+            />
+        <!--ROUTE SAVE-->
+        <Button
+            android:id="@+id/save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Save" />
+        <!--ROUTE DISCARD-->
+        <Button
+            android:id="@+id/discard"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Discard" />
+    </LinearLayout>
+
+    <!--==========ROUTE LIST DIALOG======================-->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:id="@+id/searchLayout"
+        >
+
+        <EditText
+            android:id="@+id/searchEditText"
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:background="#DB91E7"
+            android:textColor="@color/white"
+            android:hint="Search routes" />
+
+        <ListView
+            android:id="@+id/routesListView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/white"/>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:text="Close search"
+            android:id="@+id/closeSearchButton"
+            android:layout_gravity="center"
+            android:background="@drawable/square"
+            android:textColor="@color/white"
+            />
+
+    </LinearLayout>
+
+
+    <!--==========ROUTE VIEW DIALOG======================-->
+    <LinearLayout
+        android:id="@+id/routeViewLayout"
+        android:layout_width="250dp"
+        android:layout_height="260dp"
+        android:background="@drawable/dialog_background"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.975">
+        >
+
+        <TextView
+            android:id="@+id/routeNameTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:text="Route Name"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_margin="1dp"/>
+        <!--ROUTE NAME TEXTBOX-->
+        <TextView
+            android:id="@+id/routeDistanceTextView"
+            android:layout_width="200dp"
+            android:layout_height="35dp"
+            android:layout_marginTop="20dp"
+            android:ems="10"
+            android:hint="Distance: no implemendo!"
+            android:gravity="center"
+            android:inputType="textPersonName"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#FFFFFF"
+            android:layout_margin="1dp"
+            />
+        <!--ROUTE SELECT-->
+        <Button
+            android:id="@+id/routeViewSelectButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Select: no implemendo!" />
+
+        <!--ROUTE EDIT-->
+        <Button
+            android:id="@+id/routeViewEditButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Edit: no implemendoo!" />
+
+        <!--ROUTE DISCARD-->
+        <Button
+            android:id="@+id/routeViewDeleteButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Delete" />
+        <!--ROUTE CLOSE-->
+        <Button
+            android:id="@+id/routeViewCloseButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Close"
+            />
+
+    </LinearLayout>
+
+    <!--==========ROUTE DELETE DIALOG======================-->
+
+    <LinearLayout
+        android:id="@+id/routeDeleteLayout"
+        android:layout_width="250dp"
+        android:layout_height="200dp"
+        android:background="@drawable/dialog_background"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.975">
+
+        <TextView
+            android:id="@+id/sureTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:text="Are you sure you want to delete this route?"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_margin="1dp"/>
+
+        <!--ROUTE DELETE-->
+        <Button
+            android:id="@+id/routeSureDelete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Delete" />
+        <!--CANCEL DELETE-->
+        <Button
+            android:id="@+id/routeCancelDelete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Cancel" />
+    </LinearLayout>
+
+
+
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
