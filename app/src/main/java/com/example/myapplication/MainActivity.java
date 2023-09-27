@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean recording = false;
     private boolean center_start= false;
     private boolean route_selection = false;
+    private boolean marker_selection = false;
     private FusedLocationProviderClient fusedLocationProviderClient;
     //Buttons
     private Button startButton;
@@ -59,7 +60,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LinearLayout deleteLayout;
     private LinearLayout editLayout;
     private Route currentRoute;
-    private Marker currentMarker;
+    private Marker startSectionMarker;
+    private Marker middleSectionMarker;
+    private Marker stopSectionMarker;
     private RouteRepo routeRepo;
 
     @SuppressLint("SetTextI18n")
@@ -427,30 +430,58 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         EditText sectionEditText = editLayout.findViewById(R.id.sectionEditText);
         Button saveButton = editLayout.findViewById(R.id.routeEditSaveButton);
         Button closeButton = editLayout.findViewById(R.id.routeEditCloseButton);
+        Button switchButton = editLayout.findViewById(R.id.routeMarkerSwitchButton);
         TextView routeNameTextView = editLayout.findViewById(R.id.routeEditTextView);
         Spinner typeSpinner= editLayout.findViewById(R.id.sectionTypeSpinner);
+        Spinner difficultySpinner= editLayout.findViewById(R.id.sectionDifficultySpinner);
         routeNameTextView.setText(routeName);
 
         route_selection = true;
-        currentMarker = null;
+        startSectionMarker = null;
+        middleSectionMarker = null;
+        stopSectionMarker = null;
 
 
-        // Create an ArrayAdapter to populate the Spinner with data
+        // Create an ArrayAdapter to populate the type Spinner with data
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.type_options, android.R.layout.simple_spinner_item);
 
         // Specify the layout for the dropdown items
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
         // Set the adapter on the Spinner
         typeSpinner.setAdapter(adapter);
 
-        // Set an OnItemSelectedListener to handle item selection events
+        // Create an ArrayAdapter to populate the difficulty Spinner with data
+        ArrayAdapter<CharSequence> adapter2 = ArrayAdapter.createFromResource(this,
+                R.array.difficulty_options, android.R.layout.simple_spinner_item);
+        // Specify the layout for the dropdown items
+        adapter2.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Set the adapter on the Spinner
+        difficultySpinner.setAdapter(adapter2);
+
+
+        // Set an OnItemSelectedListener to handle type selection events
         typeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 // Get the selected item from the Spinner
                 String selectedType = parent.getItemAtPosition(position).toString();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                // Handle the case where nothing is selected (if needed)
+            }
+        });
+
+
+        //Set an OnItemSelectedListener to handle difficulty selection events
+
+        difficultySpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                // Get the selected item from the Spinner
+                String selectedDifficulty = parent.getItemAtPosition(position).toString();
             }
 
             @Override
@@ -466,13 +497,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     @Override
                     public void onMapClick(LatLng latLng) {
                         LatLng closestPoint = findClosestPointOnPolyline(latLng, polyline);
-
-                        if (currentMarker != null) {
+                        if(marker_selection == true){
+                            if (startSectionMarker != null) {// make a switch in the ui to switch between start and end
+                                // Remove the old marker
+                                startSectionMarker.remove();
+                            }
+                            // Add the new marker at the closest point on the polyline
+                            startSectionMarker = mMap.addMarker(new MarkerOptions().position(closestPoint).title("Start of"+sectionEditText.getText().toString()));
+                        }
+                        else{
+                        if (stopSectionMarker != null) {// make a switch in the ui to switch between start and end
                             // Remove the old marker
-                            currentMarker.remove();
+                            stopSectionMarker.remove();
                         }
                         // Add the new marker at the closest point on the polyline
-                        currentMarker = mMap.addMarker(new MarkerOptions().position(closestPoint).title(sectionEditText.getText().toString()));
+                        stopSectionMarker = mMap.addMarker(new MarkerOptions().position(closestPoint).title("End of"+sectionEditText.getText().toString()));
+                    }
                     }
                 });
             }
@@ -487,18 +527,41 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 closeButton.setOnClickListener(null);
             }
         });
+
+        switchButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(marker_selection == true){
+                    marker_selection = false;
+                    switchButton.setText("Select Start");
+                }
+                else{
+                    marker_selection = true;
+                    switchButton.setText("Select End");
+                }
+            }
+        });
+
+
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 //add the new marker to checkpoints if not null
                 //green
                 String type = typeSpinner.getSelectedItem().toString();
+                String difficulty = difficultySpinner.getSelectedItem().toString();
                 //Toast the type
-                Toast.makeText(MainActivity.this,type, Toast.LENGTH_SHORT).show();
-                if (currentMarker != null) {
-                    selectedRoute.addCheckpoint(currentMarker,type,MainActivity.this,mMap);
+                Toast.makeText(MainActivity.this,type +", "+difficulty, Toast.LENGTH_SHORT).show();
+                if (startSectionMarker != null && stopSectionMarker != null) {
+
+                    //check if start and stop are in order and get the middle
+                    //middleSectionMarker=placement(startSectionMarker,stopSectionMarker); //TODO: implement placement function
+                    //
+
+                    selectedRoute.addSection(startSectionMarker, middleSectionMarker, stopSectionMarker,type,difficulty,MainActivity.this,mMap);
                     //redraw the route
-                    currentMarker.remove();
+                    startSectionMarker.remove();
+                    stopSectionMarker.remove();
                     redrawMap();
                     //clear the edit layout
                     sectionEditText.setText("");

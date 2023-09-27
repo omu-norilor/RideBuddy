@@ -260,7 +260,7 @@
     <LinearLayout
         android:id="@+id/routeEditLayout"
         android:layout_width="250dp"
-        android:layout_height="300dp"
+        android:layout_height="390dp"
         android:background="@drawable/dialog_background"
         android:gravity="center"
         android:orientation="vertical"
@@ -286,7 +286,7 @@
         <TextView
             android:id="@+id/routeEditInfoTextView"
             android:layout_width="200dp"
-            android:layout_height="50dp"
+            android:layout_height="40dp"
             android:layout_marginTop="20dp"
             android:ems="10"
             android:hint="Select a point on the route \n to split it into sections."
@@ -299,17 +299,11 @@
         <EditText
             android:id="@+id/sectionEditText"
             android:layout_width="match_parent"
-            android:layout_height="51dp"
+            android:layout_height="30dp"
             android:background="#6750A3"
             android:textColor="@color/white"
+            android:layout_marginBottom="1dp"
             android:hint="Enter section name" />
-        <!--ROUTE SELECT-->
-<!--        <Button-->
-<!--            android:id="@+id/routeViewSelectButton"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_marginTop="1dp"-->
-<!--            android:text="Select: no implemendo!" />-->
         <Spinner
             android:id="@+id/sectionTypeSpinner"
             android:layout_width="match_parent"
@@ -317,13 +311,27 @@
             android:background="@android:drawable/btn_dropdown"
             android:entries="@array/type_options"
             android:spinnerMode="dropdown"/>
+
+        <Spinner
+            android:id="@+id/sectionDifficultySpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:drawable/btn_dropdown"
+            android:entries="@array/type_options"
+            android:spinnerMode="dropdown"/>
+        <Button
+            android:id="@+id/routeMarkerSwitchButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Select Start" />
         <!--ROUTE SPLIT SAVE-->
         <Button
             android:id="@+id/routeEditSaveButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
-            android:text="Save split" />
+            android:text="Save section" />
 
         <!--ROUTE CLOSE-->
         <Button

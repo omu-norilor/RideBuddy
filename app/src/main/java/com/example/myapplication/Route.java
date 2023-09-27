@@ -20,7 +20,7 @@ public class Route {
     private String name;
     private List<LatLng> routePoints = new ArrayList<>();
     private Marker startMarker;
-    private Map<LatLng,Checkpoint> checkpoints = new HashMap<>();
+    private Map<LatLng,Section> sections = new HashMap<>();
     private Marker endMarker;
     private List<PolylineOptions> polylineSegments = new ArrayList<>();
 
@@ -47,7 +47,7 @@ public class Route {
         route.updateEndMarker(endMarker);
         route.setPolylineSegments(polylineSegments);
         route.setRoutePoints(routePoints);
-        route.setCheckpoints((HashMap<LatLng, Checkpoint>) checkpoints);
+        route.setCheckpoints((HashMap<LatLng, Section>) sections);
         return route;
     }
 
@@ -55,30 +55,48 @@ public class Route {
         this.routePoints = new ArrayList<>(routePoints);
     }
 
-    private void setCheckpoints(HashMap<LatLng,Checkpoint> checkpoints) {
-        this.checkpoints = new HashMap<>(checkpoints);
+    private void setCheckpoints(HashMap<LatLng,Section> sections) {
+        this.sections = new HashMap<>(sections);
     }
 
-    public Map<LatLng,Checkpoint> getCheckpoints() {
-        return checkpoints;
+    public Map<LatLng,Section> getCheckpoints() {
+        return sections;
     }
 
-    public void addCheckpoint(Marker marker,String type,Context context, GoogleMap mMap) {
+    public void addSection(Marker startMarker,Marker middleMarker,Marker endMarker, String type, String difficulty, Context context, GoogleMap mMap) {
         //find closest route point
-        LatLng closestRoutePoint = null;
-        double minDistance = Double.MAX_VALUE;
+        LatLng closestRoutePointStart = null;
+        LatLng closestRoutePointMiddle = null;
+        LatLng closestRoutePointEnd = null;
+        double minDistanceStart = Double.MAX_VALUE;
+        double minDistanceMiddle = Double.MAX_VALUE;
+        double minDistanceEnd = Double.MAX_VALUE;
         for (LatLng routePoint : routePoints.toArray(new LatLng[0])) {
-            double distance = Math.sqrt(Math.pow(routePoint.latitude - marker.getPosition().latitude, 2) + Math.pow(routePoint.longitude - marker.getPosition().longitude, 2));
-            if (distance < minDistance) {
-                minDistance = distance;
-                closestRoutePoint = routePoint;
+            double distanceStart = Math.sqrt(Math.pow(routePoint.latitude - startMarker.getPosition().latitude, 2) + Math.pow(routePoint.longitude - startMarker.getPosition().longitude, 2));
+            if (distanceStart < minDistanceStart) {
+                minDistanceStart = distanceStart;
+                closestRoutePointStart = routePoint;
+            }
+
+            double distanceMiddle = Math.sqrt(Math.pow(routePoint.latitude - middleMarker.getPosition().latitude, 2) + Math.pow(routePoint.longitude - middleMarker.getPosition().longitude, 2));
+            if (distanceMiddle < minDistanceMiddle) {
+                minDistanceMiddle = distanceMiddle;
+                closestRoutePointMiddle = routePoint;
+            }
+
+            double distanceEnd = Math.sqrt(Math.pow(routePoint.latitude - endMarker.getPosition().latitude, 2) + Math.pow(routePoint.longitude - endMarker.getPosition().longitude, 2));
+            if (distanceEnd < minDistanceEnd) {
+                minDistanceEnd = distanceEnd;
+                closestRoutePointEnd = routePoint;
             }
         }
 
         //mark closest route point as checkpoint
-        marker.setPosition(closestRoutePoint);
-        Checkpoint checkpoint = new Checkpoint(marker.getTitle(), marker.getPosition(), type);
-        checkpoints.put(closestRoutePoint, checkpoint);
+        startMarker.setPosition(closestRoutePointStart);
+        endMarker.setPosition(closestRoutePointEnd);
+        Section section = new Section(startMarker.getTitle(), startMarker.getPosition(), middleMarker.getPosition(), endMarker.getPosition(), type, difficulty);
+
+        sections.put(closestRoutePointStart, section);
         rebuildRoute(mMap,context);
     }
 
@@ -89,49 +107,69 @@ public class Route {
         //add new route
         addRouteToMap(mMap,context);
     }
-    private Checkpoint getNthCheckpoint(int n) {
+    private Section getNthSection(int n) {
         int i = 0;
         for (LatLng routePoint : routePoints) {
-            if (checkpoints.containsKey(routePoint)) {
+            if (sections.containsKey(routePoint)) {
                 if (i == n) {
-                    return checkpoints.get(routePoint);
+                    return sections.get(routePoint);
                 }
                 if(i>n)
-                    return Checkpoint.DEFAULT;
+                    return Section.DEFAULT;
                 i++;
             }
         }
-        return Checkpoint.DEFAULT;
+        return Section.DEFAULT;
     }
     public void addRouteToMap(GoogleMap mMap, Context context) {
         //add each route point to map to the polyline options
         PolylineOptions currentPolyline= new PolylineOptions().clickable(true);
         String colors = "";
         try {
-            int i = 0;
-            String color= "#";
-            color = getNthCheckpoint(i).getColor();
-            String name=getNthCheckpoint(i).getTitle();
-            String type=getNthCheckpoint(i).getType();
-            colors=name+":"+color+","+type;
+            String color= "#808080"; //gray
+            String type = "default";
+            String name = "default";
             currentPolyline.color(Color.parseColor(color));
-            for (LatLng routePoint : routePoints) {
+
+            for (int i=0; i<routePoints.size(); i++) {
                 //if route point is a checkpoint, add a marker and change color
-                if (checkpoints.containsKey(routePoint)) {
+                LatLng routePoint = routePoints.get(i);
+                if (sections.containsKey(routePoint)) {
+                    //add current polyline segment to map
+                    // the current polyline is not a special section
+                    mMap.addPolyline(currentPolyline);
+                    polylineSegments.add(currentPolyline);
+
+                    //start new polyline segment
+                    currentPolyline = new PolylineOptions().clickable(true);
+                    Section currentSection = sections.get(routePoint);
+                    color = currentSection.getColor();
+                    name=currentSection.getTitle();
+                    colors=colors+"; "+name+":"+color+","+type+","+currentSection.getDifficulty();
+                    currentPolyline.color(Color.parseColor(color));
+                    //add start marker, middle marker, and end marker
+                    mMap.addMarker(new MarkerOptions().position(routePoint).title(currentSection.getTitle())); //TODO: add icon
+                    mMap.addMarker(new MarkerOptions().position(currentSection.getMiddleLocation()).title(currentSection.getTitle())); //TODO: add icon
+                    mMap.addMarker(new MarkerOptions().position(currentSection.getEndLocation()).title(currentSection.getTitle())); //TODO: add icon
+
+                    //add route points until section finish
+                    currentPolyline.add(routePoint);
+                    while(routePoint != currentSection.getEndLocation()){
+                        i++;
+                        routePoint = routePoints.get(i);
+                        currentPolyline.add(routePoint);
+                    }
+                    // increment i to skip the end location
+                    i++;
                     //add polyline segment to map
                     mMap.addPolyline(currentPolyline);
                     polylineSegments.add(currentPolyline);
 
                     //start new polyline segment
                     currentPolyline = new PolylineOptions().clickable(true);
-                    i++;
-                    color = getNthCheckpoint(i).getColor();
-                    name=getNthCheckpoint(i).getTitle();
-                    type=getNthCheckpoint(i).getType();
-                    //random color
-//                    color = String.format("#%06x", (int) (Math.random() * 0xffffff));
-                    colors=colors+"; "+name+":"+color+","+type;
-                    mMap.addMarker(new MarkerOptions().position(routePoint).title(checkpoints.get(routePoint).getTitle())); //TODO: add icon
+                    color = "#808080"; //gray
+                    type = "default";
+                    name = "default";
                     currentPolyline.color(Color.parseColor(color));
                 }
                 currentPolyline.add(routePoint);

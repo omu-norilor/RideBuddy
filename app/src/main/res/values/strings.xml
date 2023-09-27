@@ -9,7 +9,11 @@
         <item>Rock gardens</item>
         <item>Steep</item>
         <item>Off-Camber</item>
-
-        <!-- Add more type options as needed -->
+    </string-array>
+    <string-array name="difficulty_options">
+        <item>Easy</item>
+        <item>Medium</item>
+        <item>Hard</item>
+        <item>Expert</item>
     </string-array>
 </resources>
