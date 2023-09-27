@@ -19,30 +19,6 @@ public class RouteRepo {
 //        readFromFile();
     }
 
-//    private void readFromFile() {
-//        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
-//            String line;
-//            while ((line = reader.readLine()) != null) {
-//                // Assuming your Route class has a constructor that can parse a line
-//
-//                Route route = Route.parseFromString(line);
-//                routes.put(route.getName(), route);
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
-//
-//    public void writeToFile(String fileName) {
-//        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-//            for (Route route : routes.values()) {
-//                writer.write(route.toString()); // Assuming Route has a method to convert to string
-//                writer.newLine();
-//            }
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
 
 
     public void addRoute(String name, Route route) {

@@ -1,3 +1,15 @@
 <resources>
     <string name="app_name">My Application</string>
+    <string-array name="type_options">
+<!--        flowy stuff-->
+        <item>Jumps</item>
+        <item>Drops</item>
+        <item>Berms</item>
+<!--        Technical stuff-->
+        <item>Rock gardens</item>
+        <item>Steep</item>
+        <item>Off-Camber</item>
+
+        <!-- Add more type options as needed -->
+    </string-array>
 </resources>
