@@ -188,17 +188,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             testRoute.addRoutePoint(new LatLng(46.7712, 23.6245));
             testRoute.addRoutePoint(new LatLng(46.7712, 23.6246));
             testRoute.addRoutePoint(new LatLng(46.7712, 23.6247));
+            testRoute.addRoutePoint(new LatLng(46.7712, 23.6248));
+            testRoute.addRoutePoint(new LatLng(46.7712, 23.6249));
+            //slight turn
+            testRoute.addRoutePoint(new LatLng(46.7713, 23.6250));
+            testRoute.addRoutePoint(new LatLng(46.7714, 23.6251));
+            testRoute.addRoutePoint(new LatLng(46.7715, 23.6252));
+            testRoute.addRoutePoint(new LatLng(46.7716, 23.6253));
+            testRoute.addRoutePoint(new LatLng(46.7717, 23.6254));
+            testRoute.addRoutePoint(new LatLng(46.7718, 23.6255));
+            //straight line
+            testRoute.addRoutePoint(new LatLng(46.7719, 23.6256));
+            testRoute.addRoutePoint(new LatLng(46.7720, 23.6257));
+            testRoute.addRoutePoint(new LatLng(46.7721, 23.6258));
+            testRoute.addRoutePoint(new LatLng(46.7722, 23.6259));
+            testRoute.addRoutePoint(new LatLng(46.7723, 23.6260));
             //add start and end points
-            MarkerOptions startMarker = new MarkerOptions();
-            startMarker.position(new LatLng(46.7712, 23.6236));
-            startMarker.title("Start");
-            Marker start = mMap.addMarker(startMarker);
-            MarkerOptions endMarker = new MarkerOptions();
-            endMarker.position(new LatLng(46.7712, 23.6247));
-            endMarker.title("End");
-            Marker end = mMap.addMarker(endMarker);
-            testRoute.setStartMarker(start);
-            testRoute.setStartMarker(end);
+//            MarkerOptions startMarker = new MarkerOptions();
+//            startMarker.position(new LatLng(46.7712, 23.6236));
+//            startMarker.title("Start");
+//            Marker start = mMap.addMarker(startMarker);
+//            MarkerOptions endMarker = new MarkerOptions();
+//            endMarker.position(new LatLng(46.7712, 23.6247));
+//            endMarker.title("End");
+//            Marker end = mMap.addMarker(endMarker);
+//            testRoute.setStartMarker(start);
+//            testRoute.setStartMarker(end);
             //add it to the map
             testRoute.addRouteToMap(mMap,this);
             //add it to the repo
@@ -345,9 +360,35 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Button editButton = routeLayout.findViewById(R.id.routeViewEditButton);
         Button selectButton = routeLayout.findViewById(R.id.routeViewSelectButton);
         TextView routeNameTextView = routeLayout.findViewById(R.id.routeNameTextView);
+        TextView distanceTextView = routeLayout.findViewById(R.id.routeDistanceTextView);
+        TextView timeTextView = routeLayout.findViewById(R.id.routeTimeTextView);
 
         routeNameTextView.setText(routeName);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(selectedRoute.getRoutePoints().get(0), 17));
+        distanceTextView.setText("Distance: "+selectedRoute.getDistance()+" km");
+        timeTextView.setText("Best time: "+selectedRoute.getTime()+" min");
+        //zoom on center of route
+
+        List<LatLng> routePoints = selectedRoute.getRoutePoints();
+        if (!routePoints.isEmpty()) {
+            // Calculate the center point of all LatLng points
+            double sumLat = 0;
+            double sumLng = 0;
+
+            for (LatLng point : routePoints) {
+                sumLat += point.latitude;
+                sumLng += point.longitude;
+            }
+
+            double avgLat = sumLat / routePoints.size();
+            double avgLng = sumLng / routePoints.size();
+
+            LatLng centerLatLng = new LatLng(avgLat, avgLng);
+
+            // Set the camera position to the center point and zoom level (16 in this case)
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(centerLatLng, 16));
+        }
+
+//        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(selectedRoute.getRoutePoints().get(0), 17));
 
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -497,7 +538,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     @Override
                     public void onMapClick(LatLng latLng) {
                         LatLng closestPoint = findClosestPointOnPolyline(latLng, polyline);
-                        if(marker_selection == true){
+                        if(marker_selection == false){
                             if (startSectionMarker != null) {// make a switch in the ui to switch between start and end
                                 // Remove the old marker
                                 startSectionMarker.remove();
@@ -555,13 +596,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 if (startSectionMarker != null && stopSectionMarker != null) {
 
                     //check if start and stop are in order and get the middle
-                    //middleSectionMarker=placement(startSectionMarker,stopSectionMarker); //TODO: implement placement function
+                    //include the route
+                    middleSectionMarker=placement(startSectionMarker,stopSectionMarker,selectedRoute);
                     //
-
                     selectedRoute.addSection(startSectionMarker, middleSectionMarker, stopSectionMarker,type,difficulty,MainActivity.this,mMap);
                     //redraw the route
                     startSectionMarker.remove();
                     stopSectionMarker.remove();
+                    middleSectionMarker.remove();
                     redrawMap();
                     //clear the edit layout
                     sectionEditText.setText("");
@@ -572,52 +614,72 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         });
-
-
     }
+
+
+    private Marker placement(Marker start, Marker stop, Route selectedRoute){
+        //iterate through points
+        int section_length=0, start_index=-1, i=0;
+        boolean record_section=false;
+        LatLng startPoint = start.getPosition();
+        LatLng stopPoint = stop.getPosition();
+        for( LatLng routePoint: selectedRoute.getRoutePoints()){
+            if(distanceBetweenPoints(routePoint,startPoint)==0 && start_index == -1){
+                start_index = i;
+                record_section=true;
+            }
+            else if(distanceBetweenPoints(routePoint,stopPoint)==0 && start_index == -1){
+                start_index = i;
+                //switch marker positions
+                LatLng temp = start.getPosition();
+                start.setPosition(stop.getPosition());
+                stop.setPosition(temp);
+                record_section=true;
+            }
+            i++;
+            if(distanceBetweenPoints(routePoint,stopPoint)==0){
+                record_section=false;
+            }
+            if(record_section)
+                section_length++;
+
+        }
+        //get the middle point
+        int middle_index = start_index + section_length/2;
+        selectedRoute.getRoutePoints().get(middle_index);
+
+        //add the middle marker
+        LatLng middle = selectedRoute.getRoutePoints().get(middle_index);
+        MarkerOptions middleMarker = new MarkerOptions();
+        middleMarker.position(middle);
+        middleMarker.title("Middle");
+        Marker middleSectionMarker = mMap.addMarker(middleMarker);
+        return middleSectionMarker;
+    }
+
     // Function to find the closest point on a polyline to a given LatLng
     private LatLng findClosestPointOnPolyline(LatLng targetLatLng, Polyline polyline) {
         List<LatLng> points = polyline.getPoints();
         double minDistance = Double.MAX_VALUE;
         LatLng closestPoint = null;
 
-        for (int i = 0; i < points.size() - 1; i++) {
-            LatLng start = points.get(i);
-            LatLng end = points.get(i + 1);
-
-            double distance = distanceToSegment(targetLatLng, start, end);
+        for (LatLng point : points) {
+            double distance = distanceBetweenPoints(targetLatLng, point);
 
             if (distance < minDistance) {
                 minDistance = distance;
-                closestPoint = projectPointOnSegment(targetLatLng, start, end);
+                closestPoint = point;
             }
         }
 
         return closestPoint;
     }
 
-    // Function to calculate the distance from a point to a line segment
-    private double distanceToSegment(LatLng p, LatLng v, LatLng w) {
-        double l2 = squareDistance(v, w);
-        if (l2 == 0) return squareDistance(p, v);
-        double t = ((p.latitude - v.latitude) * (w.latitude - v.latitude) + (p.longitude - v.longitude) * (w.longitude - v.longitude)) / l2;
-        t = Math.max(0, Math.min(1, t));
-        return squareDistance(p, new LatLng(v.latitude + t * (w.latitude - v.latitude), v.longitude + t * (w.longitude - v.longitude)));
-    }
-
-    // Function to calculate the square of the distance between two LatLng points
-    private double squareDistance(LatLng p1, LatLng p2) {
+    // Function to calculate the distance between two LatLng points
+    private double distanceBetweenPoints(LatLng p1, LatLng p2) {
         double dx = p1.latitude - p2.latitude;
         double dy = p1.longitude - p2.longitude;
-        return dx * dx + dy * dy;
-    }
-
-    // Function to project a point onto a line segment
-    private LatLng projectPointOnSegment(LatLng p, LatLng v, LatLng w) {
-        double t = ((p.latitude - v.latitude) * (w.latitude - v.latitude) + (p.longitude - v.longitude) * (w.longitude - v.longitude)) /
-                squareDistance(v, w);
-        t = Math.max(0, Math.min(1, t));
-        return new LatLng(v.latitude + t * (w.latitude - v.latitude), v.longitude + t * (w.longitude - v.longitude));
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
 }

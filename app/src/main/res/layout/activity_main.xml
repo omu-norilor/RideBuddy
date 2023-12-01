@@ -142,7 +142,7 @@
     <LinearLayout
         android:id="@+id/routeViewLayout"
         android:layout_width="250dp"
-        android:layout_height="260dp"
+        android:layout_height="280dp"
         android:background="@drawable/dialog_background"
         android:gravity="center"
         android:orientation="vertical"
@@ -172,6 +172,19 @@
             android:layout_marginTop="20dp"
             android:ems="10"
             android:hint="Distance: no implemendo!"
+            android:gravity="center"
+            android:inputType="textPersonName"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#FFFFFF"
+            android:layout_margin="1dp"
+            />
+        <TextView
+            android:id="@+id/routeTimeTextView"
+            android:layout_width="200dp"
+            android:layout_height="35dp"
+            android:layout_marginTop="20dp"
+            android:ems="10"
+            android:hint="Best Time: no implemendo!"
             android:gravity="center"
             android:inputType="textPersonName"
             android:textColor="#FFFFFF"

@@ -6,9 +6,9 @@
         <item>Drops</item>
         <item>Berms</item>
 <!--        Technical stuff-->
-        <item>Rock gardens</item>
+        <item>Rock Garden</item>
         <item>Steep</item>
-        <item>Off-Camber</item>
+        <item>Off Camber</item>
     </string-array>
     <string-array name="difficulty_options">
         <item>Easy</item>
