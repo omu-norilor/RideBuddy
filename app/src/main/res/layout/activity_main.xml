@@ -358,4 +358,40 @@
     </LinearLayout>
 
 
+    <LinearLayout
+        android:id="@+id/routeSelectLayout"
+        android:layout_width="200dp"
+        android:layout_height="120dp"
+        android:background="@drawable/dialog_background"
+        android:gravity="center"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.975">
+        >
+
+        <TextView
+            android:id="@+id/routeSelectTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:text="Route Name"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_margin="1dp"/>
+        <!--ROUTE SELECT-->
+        <Button
+            android:id="@+id/routeSelectStartButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp"
+            android:text="Start Route" />
+    </LinearLayout>
+
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -41,6 +41,11 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 
+import java.sql.Time;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback{
@@ -59,11 +64,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LinearLayout routeLayout;
     private LinearLayout deleteLayout;
     private LinearLayout editLayout;
+    private LinearLayout selectLayout;
     private Route currentRoute;
     private Marker startSectionMarker;
     private Marker middleSectionMarker;
     private Marker stopSectionMarker;
     private RouteRepo routeRepo;
+    private Location currentLocation;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -86,7 +93,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         deleteLayout.setVisibility(View.GONE);
         editLayout = findViewById(R.id.routeEditLayout);
         editLayout.setVisibility(View.GONE);
-        
+        selectLayout = findViewById(R.id.routeSelectLayout);
+        selectLayout.setVisibility(View.GONE);
+
         routeName = findViewById(R.id.routeName);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.maps);
@@ -250,8 +259,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     @Override
                     public void onLocationResult(LocationResult locationResult) {
                         if (locationResult != null && locationResult.getLastLocation() != null) {
-                            Location location = locationResult.getLastLocation();
-                            LatLng currentLatLng = new LatLng(location.getLatitude(), location.getLongitude());
+                            currentLocation = locationResult.getLastLocation();
+                            LatLng currentLatLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
                             if(!center_start){
                                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
                                 center_start=true;
@@ -426,7 +435,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View v) {
                 routeLayout.setVisibility(View.GONE);
-//                openSelectRouteDialog(selectedRoute,routeName);
+                openSelectRouteDialog(selectedRoute,routeName);
                 closeButton.setOnClickListener(null);
                 deleteButton.setOnClickListener(null);
                 editButton.setOnClickListener(null);
@@ -464,7 +473,102 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
     }
+    void openSelectRouteDialog(Route selectedRoute, String routeName){
+        selectLayout.setVisibility(View.VISIBLE);
+        Button startButton = selectLayout.findViewById(R.id.routeSelectStartButton);
 
+        startButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // if rider is at the start of the route
+                // start the timer and prepare to stop the timer when the rider:
+                // is at the end of the route
+                // stops the timer
+                // gets off the route
+
+                selectLayout.setVisibility(View.GONE);
+                mMap.setOnPolylineClickListener(null);
+
+
+                if (startButton.getText().toString().equals("Start Route") && riderAtStart(selectedRoute)) {
+                    startButton.setText("Stop Route");
+                    startButton.setBackgroundColor(Color.parseColor("#FF6750A3"));
+                    startButton.setTextColor(Color.WHITE);
+                    recording=true;
+                    startRecording(selectedRoute);
+                } else {
+                    startButton.setText("Start Route");
+                    startButton.setBackgroundColor(Color.parseColor("#FFDB91E7"));
+                    startButton.setTextColor(Color.BLACK);
+                    recording=false;
+                }
+            }
+        });
+    }
+    Boolean riderAtStart(Route selectedRoute){
+        //get current location
+        Location location = currentLocation;
+        LatLng locationPoint = new LatLng(location.getLatitude(),location.getLongitude());
+        List<LatLngWithDistance> closestPoints = getNthClosestPoints(locationPoint,selectedRoute,2);
+        double distance_between_first_two_points = distanceBetweenPoints(closestPoints.get(0).getLatLng(), closestPoints.get(1).getLatLng());
+
+        // check if closest point is the start of the route and the distance is less than 5 meters
+        if (closestPoints.get(0).getLatLng() == selectedRoute.getRoutePoints().get(0) &&
+            closestPoints.get(0).getDistance()<5 &&
+            closestPoints.get(1).getLatLng() == selectedRoute.getRoutePoints().get(1) &&
+            closestPoints.get(1).getDistance() > distance_between_first_two_points )
+            return true;
+        else
+            return false;
+    }
+
+    Boolean riderAtEnd(Route selectedRoute){
+        //get current location
+        Location location =currentLocation;
+        LatLng locationPoint = new LatLng(location.getLatitude(),location.getLongitude());
+        List<LatLngWithDistance> closestPoints = getNthClosestPoints(locationPoint,selectedRoute,2);
+        double distance_between_first_two_points = distanceBetweenPoints(closestPoints.get(0).getLatLng(), closestPoints.get(1).getLatLng());
+
+        // check if closest point is the end of the route and the distance is less than 5 meters
+        // and if the distance from the second closest point is greater than the distance between the first and the second point
+        if (closestPoints.get(0).getLatLng() == selectedRoute.getRoutePoints().get(selectedRoute.getRoutePoints().size()-1) &&
+                closestPoints.get(1).getLatLng() == selectedRoute.getRoutePoints().get(selectedRoute.getRoutePoints().size()-2) &&
+                closestPoints.get(1).getDistance() > distance_between_first_two_points )
+            return true;
+        else
+            return false;
+
+    }
+
+    Boolean stayOnTrail(Route selectedRoute){
+        //get current location
+        Location location = currentLocation;
+        LatLng locationPoint = new LatLng(location.getLatitude(),location.getLongitude());
+        List<LatLngWithDistance> closestPoints = getNthClosestPoints(locationPoint,selectedRoute,2);
+
+        //if the distance is greater than 5 meters the rider is off the trail
+        double distance_to_line = distanceToLine(locationPoint, closestPoints.get(0).getLatLng(), closestPoints.get(1).getLatLng());
+        if (distance_to_line < 5)
+            return true;
+        else
+            return false;
+    }
+    LocalTime startRecording(Route selectedRoute){
+        //get current time
+        LocalTime startTime = LocalTime.now();
+        while(recording == true){
+            //check if current location is on the route
+            Boolean onTrail = stayOnTrail(selectedRoute);
+            Boolean atEnd = riderAtEnd(selectedRoute);
+            if(onTrail == false || atEnd == true){
+                recording = false;
+            }
+        }
+        //stop timer and save
+        LocalTime endTime = LocalTime.now();
+        LocalTime totalTime = endTime.minusHours(startTime.getHour()).minusMinutes(startTime.getMinute()).minusSeconds(startTime.getSecond());
+        return totalTime;
+    }
     void openEditRouteDialog(Route selectedRoute, String routeName){
 
         editLayout.setVisibility(View.VISIBLE);
@@ -675,11 +779,64 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return closestPoint;
     }
 
+    public static List<LatLngWithDistance> getNthClosestPoints(LatLng location, Route selectedRoute, int N) {
+        List<LatLngWithDistance> distances = new ArrayList<>();
+        for (LatLng point : selectedRoute.getRoutePoints()) {
+
+            double distance = distanceBetweenPoints(location, point);
+            distances.add(new LatLngWithDistance(point, distance));
+        }
+
+        // Sort by distance
+        Collections.sort(distances, new Comparator<LatLngWithDistance>() {
+            @Override
+            public int compare(LatLngWithDistance o1, LatLngWithDistance o2) {
+                return Double.compare(o1.getDistance(), o2.getDistance());
+            }
+        });
+
+        // Return the Nth closest points with their distances
+        return distances.subList(0, Math.min(N, distances.size()));
+    }
+
     // Function to calculate the distance between two LatLng points
-    private double distanceBetweenPoints(LatLng p1, LatLng p2) {
+    private static double distanceBetweenPoints(LatLng p1, LatLng p2) {
         double dx = p1.latitude - p2.latitude;
         double dy = p1.longitude - p2.longitude;
         return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    public static double distanceToLine(LatLng point, LatLng lineStart, LatLng lineEnd) {
+        //get the line equation and return the distance from the given point to the line
+        float x0 = (float) point.longitude;
+        float y0 = (float) point.latitude;
+        float x1 = (float) lineStart.longitude;
+        float y1 = (float) lineStart.latitude;
+        float x2 = (float) lineEnd.longitude;
+        float y2 = (float) lineEnd.latitude;
+
+        float numerator = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
+        float denominator = (float) Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
+
+        return numerator / denominator;
+    }
+
+    public static class LatLngWithDistance {
+        private final LatLng latLng;
+        private final double distance;
+
+        public LatLngWithDistance(LatLng latLng, double distance) {
+            this.latLng = latLng;
+            this.distance = distance;
+        }
+
+        public LatLng getLatLng() {
+            return latLng;
+        }
+
+        public double getDistance() {
+            return distance;
+        }
     }
 
 }
