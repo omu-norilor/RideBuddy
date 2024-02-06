@@ -8,8 +8,12 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
+import android.speech.tts.TextToSpeech;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
+import android.util.Pair;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -20,6 +24,7 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.speech.tts.TextToSpeech;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -47,13 +52,20 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback{
+
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 1;
+    LocationUpdaterThread locationUpdaterThread;
+    private TextToSpeech tts;
     private boolean recording = false;
-    private boolean center_start= false;
+    private boolean recording_run = false;
+    private boolean center_start = false;
     private boolean route_selection = false;
     private boolean marker_selection = false;
+    private String last_section = "";
     private FusedLocationProviderClient fusedLocationProviderClient;
     //Buttons
     private Button startButton;
@@ -71,6 +83,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Marker stopSectionMarker;
     private RouteRepo routeRepo;
     private Location currentLocation;
+    public LocalTime startTime;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -78,10 +91,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
-
         currentRoute = new Route("current");
         //initialize repo from file
-        routeRepo = new RouteRepo("routerepo.json");
+        routeRepo = new RouteRepo("route_repo.json");
 
         saveLayout = findViewById(R.id.routeSaveLayout);
         saveLayout.setVisibility(View.GONE);
@@ -111,15 +123,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 startButton.setText("Stop Route Recording");
                 startButton.setBackgroundColor(Color.parseColor("#FF6750A3"));
                 startButton.setTextColor(Color.WHITE);
-                recording=true;
+                recording = true;
             } else {
                 saveLayout.setVisibility(View.VISIBLE);
                 startButton.setText("Start Route Recording");
                 startButton.setBackgroundColor(Color.parseColor("#FFDB91E7"));
                 startButton.setTextColor(Color.BLACK);
-                recording=false;
+                recording = false;
             }
-            });
+        });
 
         // Save button
         Button saveRouteButton = findViewById(R.id.save);
@@ -132,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Route routeToSave = currentRoute.clone();
                     routeToSave.setName(name);
                     routeRepo.addRoute(name, routeToSave);
-                    routeToSave.addRouteToMap(mMap,MainActivity.this);
+                    routeToSave.addRouteToMap(mMap, MainActivity.this);
                     routeName.setText("");
                     saveLayout.setVisibility(View.GONE); // Hide the dialog
                     //reset current route
@@ -168,67 +180,141 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View v) {
                 showRouteListDialog();
+                selectLayout.setVisibility(View.GONE);
+                editLayout.setVisibility(View.GONE);
+                deleteLayout.setVisibility(View.GONE);
+                routeLayout.setVisibility(View.GONE);
+                saveLayout.setVisibility(View.GONE);
+
+            }
+        });
+
+        tts = new TextToSpeech(this, status -> {
+            if (status != TextToSpeech.ERROR) {
+                tts.setLanguage(Locale.ENGLISH);
             }
         });
 
 
     }
 
+    private void testCluj() {
+        Route testRoute = new Route("test Cluj");
+
+        //make it a straight line
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6236));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6237));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6238));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6239));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6240));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6241));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6242));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6243));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6244));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6245));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6246));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6247));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6248));
+        testRoute.addRoutePoint(new LatLng(46.7712, 23.6249));
+        //slight turn
+        testRoute.addRoutePoint(new LatLng(46.7713, 23.6250));
+        testRoute.addRoutePoint(new LatLng(46.7714, 23.6251));
+        testRoute.addRoutePoint(new LatLng(46.7715, 23.6252));
+        testRoute.addRoutePoint(new LatLng(46.7716, 23.6253));
+        testRoute.addRoutePoint(new LatLng(46.7717, 23.6254));
+        testRoute.addRoutePoint(new LatLng(46.7718, 23.6255));
+        //straight line
+        testRoute.addRoutePoint(new LatLng(46.7719, 23.6256));
+        testRoute.addRoutePoint(new LatLng(46.7720, 23.6257));
+        testRoute.addRoutePoint(new LatLng(46.7721, 23.6258));
+        testRoute.addRoutePoint(new LatLng(46.7722, 23.6259));
+        testRoute.addRoutePoint(new LatLng(46.7723, 23.6260));
+        //add it to the map
+        testRoute.addRouteToMap(mMap, this);
+        //add it to the repo
+        routeRepo.addRoute("test Cluj", testRoute);
+    }
+
+    private void testBaiaMare() {
+        Route testRoute = new Route("test Baia Mare");
+
+        //make it a straight line, start at 47.6489, 23.5646
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5646));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5647));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5648));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5649));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5650));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5651));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5652));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5653));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5654));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5655));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5656));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5657));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5658));
+        testRoute.addRoutePoint(new LatLng(47.6489, 23.5659));
+        //slight turn
+        testRoute.addRoutePoint(new LatLng(47.6490, 23.5660));
+        testRoute.addRoutePoint(new LatLng(47.6491, 23.5661));
+        testRoute.addRoutePoint(new LatLng(47.6492, 23.5662));
+        testRoute.addRoutePoint(new LatLng(47.6493, 23.5663));
+        testRoute.addRoutePoint(new LatLng(47.6494, 23.5664));
+        testRoute.addRoutePoint(new LatLng(47.6495, 23.5665));
+        //straight line
+        testRoute.addRoutePoint(new LatLng(47.6496, 23.5666));
+        testRoute.addRoutePoint(new LatLng(47.6497, 23.5667));
+        testRoute.addRoutePoint(new LatLng(47.6498, 23.5668));
+        testRoute.addRoutePoint(new LatLng(47.6499, 23.5669));
+        testRoute.addRoutePoint(new LatLng(47.6500, 23.5670));
+
+        //add it to the map
+        testRoute.addRouteToMap(mMap, this);
+        //add it to the repo
+        routeRepo.addRoute("test Baia Mare", testRoute);
+    }
+
+    private void testLangaBlocCluj(){
+        Route testRoute = new Route("test langa Bloc Cluj");
+        //make it a straight line
+        testRoute.addRoutePoint(new LatLng(46.766295, 23.625854));
+        testRoute.addRoutePoint(new LatLng(46.766314, 23.625970));
+        testRoute.addRoutePoint(new LatLng(46.766335, 23.626100));
+        testRoute.addRoutePoint(new LatLng(46.766395, 23.626433));
+        testRoute.addRoutePoint(new LatLng(46.766398, 23.626702));
+
+
+        //add it to the map
+        testRoute.addRouteToMap(mMap, this);
+        //add it to the repo
+        routeRepo.addRoute("test langa Bloc Cluj", testRoute);
+
+    }
+
     @Override
     public void onMapReady(@NonNull GoogleMap googleMap) {
         mMap = googleMap;
+
+        locationUpdaterThread = new LocationUpdaterThread(this);
         // Check for location permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
-            //center map on current location
 
-            //add a debugging route to the map for testing
-            Route testRoute = new Route("test");
-            //make it a straight line
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6236));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6237));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6238));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6239));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6240));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6241));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6242));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6243));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6244));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6245));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6246));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6247));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6248));
-            testRoute.addRoutePoint(new LatLng(46.7712, 23.6249));
-            //slight turn
-            testRoute.addRoutePoint(new LatLng(46.7713, 23.6250));
-            testRoute.addRoutePoint(new LatLng(46.7714, 23.6251));
-            testRoute.addRoutePoint(new LatLng(46.7715, 23.6252));
-            testRoute.addRoutePoint(new LatLng(46.7716, 23.6253));
-            testRoute.addRoutePoint(new LatLng(46.7717, 23.6254));
-            testRoute.addRoutePoint(new LatLng(46.7718, 23.6255));
-            //straight line
-            testRoute.addRoutePoint(new LatLng(46.7719, 23.6256));
-            testRoute.addRoutePoint(new LatLng(46.7720, 23.6257));
-            testRoute.addRoutePoint(new LatLng(46.7721, 23.6258));
-            testRoute.addRoutePoint(new LatLng(46.7722, 23.6259));
-            testRoute.addRoutePoint(new LatLng(46.7723, 23.6260));
-            //add start and end points
-//            MarkerOptions startMarker = new MarkerOptions();
-//            startMarker.position(new LatLng(46.7712, 23.6236));
-//            startMarker.title("Start");
-//            Marker start = mMap.addMarker(startMarker);
-//            MarkerOptions endMarker = new MarkerOptions();
-//            endMarker.position(new LatLng(46.7712, 23.6247));
-//            endMarker.title("End");
-//            Marker end = mMap.addMarker(endMarker);
-//            testRoute.setStartMarker(start);
-//            testRoute.setStartMarker(end);
-            //add it to the map
-            testRoute.addRouteToMap(mMap,this);
-            //add it to the repo
-            routeRepo.addRoute("test",testRoute);
+            // Start location updates
+            startLocationUpdatesWithThread(locationUpdaterThread);
 
-            startLocationUpdates();
+            // Center map on current location
+            Location currentLocation = locationUpdaterThread.getCurrentLocation();
+            if (currentLocation != null) {
+                LatLng currentLatLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
+            }
+
+            //add a debugging routes to the map for testing
+            testCluj();
+            testBaiaMare();
+            testLangaBlocCluj();
+
+
         } else {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
@@ -251,37 +337,89 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @SuppressLint("MissingPermission")
-    public void startLocationUpdates(){
+    public void startLocationUpdatesWithThread(LocationUpdaterThread locationUpdaterThread) {
         mMap.setMyLocationEnabled(true);
-        // Request continuous location updates
-        fusedLocationProviderClient.requestLocationUpdates(createLocationRequest(),
-                new LocationCallback() {
-                    @Override
-                    public void onLocationResult(LocationResult locationResult) {
-                        if (locationResult != null && locationResult.getLastLocation() != null) {
-                            currentLocation = locationResult.getLastLocation();
-                            LatLng currentLatLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
-                            if(!center_start){
-                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
-                                center_start=true;
-                            }
-                            if(recording) {
-                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
-                                Marker marker = mMap.addMarker(new MarkerOptions().position(currentLatLng).title("My Location"));
-                                currentRoute.addRoutePoint(currentLatLng);
-                                if (currentRoute.getStartMarker() == null) {
-                                    currentRoute.setStartMarker(marker);
-                                }
-                                // delete previous end marker
-                                if (currentRoute.getEndMarker() != null) {
-                                    currentRoute.getEndMarker().remove();
-                                }
-                                currentRoute.updateEndMarker(marker);
-                            }
+
+        locationUpdaterThread.startLocationUpdates();
+
+        locationUpdaterThread.setOnLocationChangeListener(location -> {
+            if (location != null) {
+                currentLocation = location;
+                LatLng currentLatLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
+                if (!center_start) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
+                    center_start = true;
+                }
+                if (recording) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
+                    Marker marker = mMap.addMarker(new MarkerOptions().position(currentLatLng).title("My Location"));
+                    currentRoute.addRoutePoint(currentLatLng);
+                    if (currentRoute.getStartMarker() == null) {
+                        currentRoute.setStartMarker(marker);
+                    }
+                    // Delete previous end marker
+                    if (currentRoute.getEndMarker() != null) {
+                        currentRoute.getEndMarker().remove();
+                    }
+                    currentRoute.updateEndMarker(marker);
+                }
+                if (recording_run){
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
+                    List<LatLngWithDistance> closestPoints = getNthClosestPoints(currentLatLng,currentRoute,2);
+                    Boolean onTrail = stayOnTrail(currentLatLng,currentRoute,closestPoints);
+                    Boolean atEnd = riderAtEnd(currentLatLng,currentRoute,closestPoints);
+                    Pair<Double,String> section = getClosestSection(currentLatLng,currentRoute);
+//                    Toast.makeText(MainActivity.this, "Your coordinates are: "+currentLatLng.toString(), Toast.LENGTH_SHORT).show();
+                    //log ontrail and atend
+                    // Log the values of onTrail and atEnd
+                    Log.d("RunStatus", "onTrail: " + onTrail + ", atEnd: " + atEnd);
+                    Toast.makeText(MainActivity.this, "onTrail: " + onTrail + ", atEnd: " + atEnd, Toast.LENGTH_SHORT).show();
+
+                    if(section.first < 20){
+                        Toast.makeText(MainActivity.this, "You are in section: "+section.second, Toast.LENGTH_SHORT).show();
+                        if(last_section.equals(section.second) == false){
+                            last_section = section.second;
+                            tts.speak("Incoming "+section.second, TextToSpeech.QUEUE_FLUSH, null);
                         }
                     }
-                },
-                null);
+                    if(onTrail == false || atEnd == true){
+                        recording_run = false;
+                        //stop timer and save
+                        LocalTime endTime = LocalTime.now();
+                        LocalTime totalTime = endTime.minusHours(startTime.getHour()).minusMinutes(startTime.getMinute()).minusSeconds(startTime.getSecond());
+                        //convert to string, only time minutes, seconds
+                        String time = totalTime.toString();
+                        time= time.substring(3);
+                        if (onTrail == false){
+                            Toast.makeText(MainActivity.this, "You got off the trail. Run ended in "+totalTime.toString(), Toast.LENGTH_SHORT).show();
+                            tts.speak("You got off the trail. Run ended in "+totalTime.toString(), TextToSpeech.QUEUE_FLUSH, null);
+                        }
+                        if (atEnd == true){
+                            currentRoute.setTime(time);
+                            Toast.makeText(MainActivity.this, "You finished the route in "+totalTime.toString(), Toast.LENGTH_SHORT).show();
+                            tts.speak("You finished the route in "+totalTime.toString(), TextToSpeech.QUEUE_FLUSH, null);
+                        }
+                        selectLayout.setVisibility(View.GONE);
+                        last_section = "";
+                    }
+                }
+            }
+        });
+    }
+
+    private Pair<Double, String> getClosestSection(LatLng currentLatLng, Route currentRoute) {
+        Map<LatLng, Section> sections = currentRoute.getSections();
+        double min_distance = 1000000;
+        String min_section_description = "";
+        //for each LatLng in the sections calculate distance to currentLatLng
+        for (LatLng point : sections.keySet()) {
+            double distance = distanceBetweenPoints(currentLatLng, point);
+            if(distance < min_distance) {
+                min_distance = distance;
+                min_section_description = sections.get(point).getType() + ". Difficulty: " + sections.get(point).getDifficulty();
+            }
+        }
+        return new Pair<>(min_distance, min_section_description);
     }
 
 
@@ -296,8 +434,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private LocationRequest createLocationRequest() {
         LocationRequest locationRequest = new LocationRequest();
-        locationRequest.setInterval(3000); // Update interval in milliseconds (10 seconds)
-        locationRequest.setFastestInterval(1000); // Fastest update interval in milliseconds (5 seconds)
+        locationRequest.setInterval(3000); // Update interval in milliseconds (3 seconds)
+        locationRequest.setFastestInterval(1000); // Fastest update interval in milliseconds (1 second)
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         return locationRequest;
     }
@@ -373,8 +511,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         TextView timeTextView = routeLayout.findViewById(R.id.routeTimeTextView);
 
         routeNameTextView.setText(routeName);
-        distanceTextView.setText("Distance: "+selectedRoute.getDistance()+" km");
-        timeTextView.setText("Best time: "+selectedRoute.getTime()+" min");
+        String formattedDistance = "";
+        if (selectedRoute.getDistance() >= 1)
+            formattedDistance = String.format("Distance:  %.2f kilometers", selectedRoute.getDistance());
+        else
+            formattedDistance = String.format("Distance: %.2f meters", selectedRoute.getDistance()*1000);
+        distanceTextView.setText(formattedDistance);
+        timeTextView.setText("Best time: "+selectedRoute.getTime());
         //zoom on center of route
 
         List<LatLng> routePoints = selectedRoute.getRoutePoints();
@@ -475,9 +618,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
     void openSelectRouteDialog(Route selectedRoute, String routeName){
         selectLayout.setVisibility(View.VISIBLE);
-        Button startButton = selectLayout.findViewById(R.id.routeSelectStartButton);
-
-        startButton.setOnClickListener(new View.OnClickListener() {
+        Button selectStartButton = selectLayout.findViewById(R.id.routeSelectStartButton);
+        TextView routeNameTextView = selectLayout.findViewById(R.id.routeSelectTextView);
+        routeNameTextView.setText(routeName);
+        selectStartButton.setBackgroundColor(Color.parseColor("#FF6750A3"));
+        selectStartButton.setTextColor(Color.WHITE);
+        selectStartButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // if rider is at the start of the route
@@ -486,35 +632,38 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 // stops the timer
                 // gets off the route
 
-                selectLayout.setVisibility(View.GONE);
+//                selectLayout.setVisibility(View.GONE);
                 mMap.setOnPolylineClickListener(null);
 
+                if (selectStartButton.getText().toString().equals("Start Route")) {
 
-                if (startButton.getText().toString().equals("Start Route") && riderAtStart(selectedRoute)) {
-                    startButton.setText("Stop Route");
-                    startButton.setBackgroundColor(Color.parseColor("#FF6750A3"));
-                    startButton.setTextColor(Color.WHITE);
-                    recording=true;
-                    startRecording(selectedRoute);
+                    Location location = locationUpdaterThread.getCurrentLocation();
+                    LatLng locationPoint = new LatLng(location.getLatitude(),location.getLongitude());
+                    List<LatLngWithDistance> closestPoints = getNthClosestPoints(locationPoint,selectedRoute,2);
+                    if(riderAtStart(locationPoint, selectedRoute, closestPoints) == true) {
+
+                        selectStartButton.setText("Stop Route");
+                        startTime = LocalTime.now();
+                        currentRoute= selectedRoute;
+                        recording_run = true;
+                    }
+                    else {
+                        Toast.makeText(MainActivity.this, "You are not at the start of the route", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
-                    startButton.setText("Start Route");
-                    startButton.setBackgroundColor(Color.parseColor("#FFDB91E7"));
-                    startButton.setTextColor(Color.BLACK);
-                    recording=false;
+                    selectStartButton.setText("Start Route");
+                    recording_run = false;
+                    selectLayout.setVisibility(View.GONE);
                 }
             }
         });
     }
-    Boolean riderAtStart(Route selectedRoute){
-        //get current location
-        Location location = currentLocation;
-        LatLng locationPoint = new LatLng(location.getLatitude(),location.getLongitude());
-        List<LatLngWithDistance> closestPoints = getNthClosestPoints(locationPoint,selectedRoute,2);
+    Boolean riderAtStart(LatLng locationPoint, Route selectedRoute, List<LatLngWithDistance> closestPoints){
         double distance_between_first_two_points = distanceBetweenPoints(closestPoints.get(0).getLatLng(), closestPoints.get(1).getLatLng());
-
-        // check if closest point is the start of the route and the distance is less than 5 meters
+        // check if closest point is the end of the route and the distance is less than 5 meters
+        // and if the distance from the second closest point is greater than the distance between the first and the second point
         if (closestPoints.get(0).getLatLng() == selectedRoute.getRoutePoints().get(0) &&
-            closestPoints.get(0).getDistance()<5 &&
+            closestPoints.get(0).getDistance()<10 &&
             closestPoints.get(1).getLatLng() == selectedRoute.getRoutePoints().get(1) &&
             closestPoints.get(1).getDistance() > distance_between_first_two_points )
             return true;
@@ -522,13 +671,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             return false;
     }
 
-    Boolean riderAtEnd(Route selectedRoute){
-        //get current location
-        Location location =currentLocation;
-        LatLng locationPoint = new LatLng(location.getLatitude(),location.getLongitude());
-        List<LatLngWithDistance> closestPoints = getNthClosestPoints(locationPoint,selectedRoute,2);
+    Boolean riderAtEnd(LatLng locationPoint, Route selectedRoute, List<LatLngWithDistance> closestPoints){
         double distance_between_first_two_points = distanceBetweenPoints(closestPoints.get(0).getLatLng(), closestPoints.get(1).getLatLng());
-
         // check if closest point is the end of the route and the distance is less than 5 meters
         // and if the distance from the second closest point is greater than the distance between the first and the second point
         if (closestPoints.get(0).getLatLng() == selectedRoute.getRoutePoints().get(selectedRoute.getRoutePoints().size()-1) &&
@@ -540,34 +684,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
-    Boolean stayOnTrail(Route selectedRoute){
-        //get current location
-        Location location = currentLocation;
-        LatLng locationPoint = new LatLng(location.getLatitude(),location.getLongitude());
-        List<LatLngWithDistance> closestPoints = getNthClosestPoints(locationPoint,selectedRoute,2);
-
-        //if the distance is greater than 5 meters the rider is off the trail
+    Boolean stayOnTrail(LatLng locationPoint, Route selectedRoute, List<LatLngWithDistance> closestPoints){
         double distance_to_line = distanceToLine(locationPoint, closestPoints.get(0).getLatLng(), closestPoints.get(1).getLatLng());
-        if (distance_to_line < 5)
+        //if the distance is greater than 5 meters the rider is off the trail
+        Log.d("StayOnTrail", "Distance to line: " + distance_to_line);
+        if (distance_to_line < 10)
             return true;
         else
             return false;
-    }
-    LocalTime startRecording(Route selectedRoute){
-        //get current time
-        LocalTime startTime = LocalTime.now();
-        while(recording == true){
-            //check if current location is on the route
-            Boolean onTrail = stayOnTrail(selectedRoute);
-            Boolean atEnd = riderAtEnd(selectedRoute);
-            if(onTrail == false || atEnd == true){
-                recording = false;
-            }
-        }
-        //stop timer and save
-        LocalTime endTime = LocalTime.now();
-        LocalTime totalTime = endTime.minusHours(startTime.getHour()).minusMinutes(startTime.getMinute()).minusSeconds(startTime.getSecond());
-        return totalTime;
     }
     void openEditRouteDialog(Route selectedRoute, String routeName){
 
@@ -800,13 +924,50 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     // Function to calculate the distance between two LatLng points
-    private static double distanceBetweenPoints(LatLng p1, LatLng p2) {
-        double dx = p1.latitude - p2.latitude;
-        double dy = p1.longitude - p2.longitude;
-        return Math.sqrt(dx * dx + dy * dy);
+
+
+    public static double distanceBetweenPoints(LatLng p1, LatLng p2){
+        // Haversine formula
+        final double R = 6371.0;
+
+        // Convert latitude and longitude from degrees to radians
+        double lat1Rad = Math.toRadians(p1.latitude);
+        double lon1Rad = Math.toRadians(p1.longitude);
+        double lat2Rad = Math.toRadians(p2.latitude);
+        double lon2Rad = Math.toRadians(p2.longitude);
+
+        // Calculate the differences in coordinates
+        double dlat = lat2Rad - lat1Rad;
+        double dlon = lon2Rad - lon1Rad;
+
+        // Haversine formula
+        double a = Math.sin(dlat / 2) * Math.sin(dlat / 2)
+                + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dlon / 2) * Math.sin(dlon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        // Calculate and return the distance
+        return R * c;
+    }
+    private static double badDistanceBetweenPoints(LatLng p1, LatLng p2) {
+        double lat1 = Math.toRadians(p1.latitude);
+        double lon1 = Math.toRadians(p1.longitude);
+        double lat2 = Math.toRadians(p2.latitude);
+        double lon2 = Math.toRadians(p2.longitude);
+
+        double dLat = lat2 - lat1;
+        double dLon = lon2 - lon1;
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1) * Math.cos(lat2) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        double EARTH_RADIUS = 6371000; // Radius of the earth in meters
+        return EARTH_RADIUS * c; // Distance in meters
     }
 
-    public static double distanceToLine(LatLng point, LatLng lineStart, LatLng lineEnd) {
+    public static double badDistanceToLine(LatLng point, LatLng lineStart, LatLng lineEnd) {
         //get the line equation and return the distance from the given point to the line
         float x0 = (float) point.longitude;
         float y0 = (float) point.latitude;
@@ -818,7 +979,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         float numerator = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
         float denominator = (float) Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
 
+        Log.d ("StayOnTrail", "point: " + point);
+        Log.d("StayOnTrail", "Line start: " + lineStart);
+        Log.d("StayOnTrail", "Line end: " + lineEnd);
+        Log.d("StayOnTrail", "Distance to line: " + numerator / denominator);
+
         return numerator / denominator;
+    }
+
+    public static double distanceToLine(LatLng point, LatLng lineStart, LatLng lineEnd) {
+        double dStartPoint = distanceBetweenPoints(point, lineStart);
+        double dEndPoint = distanceBetweenPoints(point, lineEnd);
+        double dStartEnd = distanceBetweenPoints(lineStart, lineEnd);
+
+        // Use Heron's formula to calculate the area of the triangle
+        double s = (dStartPoint + dEndPoint + dStartEnd) / 2;
+        double areaTriangle = Math.sqrt(s * (s - dStartPoint) * (s - dEndPoint) * (s - dStartEnd));
+
+        // Calculate the perpendicular distance
+        double distance = (2 * areaTriangle) / dStartEnd;
+
+        Log.d("StayOnTrail", "Point: " + point);
+        Log.d("StayOnTrail", "Line start: " + lineStart);
+        Log.d("StayOnTrail", "Line end: " + lineEnd);
+        Log.d("StayOnTrail", "Distance to line: " + distance);
+
+
+        return distance*1000;
     }
 
     public static class LatLngWithDistance {

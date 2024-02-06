@@ -142,7 +142,7 @@
     <LinearLayout
         android:id="@+id/routeViewLayout"
         android:layout_width="250dp"
-        android:layout_height="280dp"
+        android:layout_height="320dp"
         android:background="@drawable/dialog_background"
         android:gravity="center"
         android:orientation="vertical"
@@ -197,7 +197,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
-            android:text="Select: no implemendo!" />
+            android:text="Select" />
 
         <!--ROUTE EDIT-->
         <Button
@@ -357,7 +357,7 @@
 
     </LinearLayout>
 
-
+    <!--==========ROUTE SELECT DIALOG===================-->
     <LinearLayout
         android:id="@+id/routeSelectLayout"
         android:layout_width="200dp"
@@ -389,6 +389,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="1dp"
+
             android:text="Start Route" />
     </LinearLayout>
 

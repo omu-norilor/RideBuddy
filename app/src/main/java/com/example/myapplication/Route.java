@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
@@ -30,7 +31,7 @@ public class Route {
     private Marker endMarker;
     private List<PolylineOptions> polylineSegments = new ArrayList<>();
     private Float distance;
-    private Long time;
+    private String time;
 
 
     public Route( String name) {
@@ -39,6 +40,10 @@ public class Route {
         polylineOptions.color(Color.parseColor("#808080"));
         polylineSegments.add(polylineOptions);
 
+    }
+
+    public Map<LatLng, Section> getSections() {
+        return sections;
     }
 
     public String getName() {
@@ -74,8 +79,26 @@ public class Route {
         return distance;
     }
 
-    public Long getTime() {
+    public String getTime() {
         return time;
+    }
+
+    public void setTime(String time) {
+        if (this.time == null)
+            this.time = time;
+        else if (time.compareTo(this.time) < 0)
+            this.time = time;
+    }
+    public List<PolylineOptions> getPolylineSegments() {
+        return polylineSegments;
+    }
+
+    public List<LatLng> getRoutePoints() {
+        return routePoints;
+    }
+
+    public Marker getEndMarker() {
+        return endMarker;
     }
 
     private void setRoutePoints(List<LatLng> routePoints) {
@@ -94,6 +117,7 @@ public class Route {
         float distance = 0;
         for (int i = 0; i < routePoints.size() - 1; i++) {
             distance += distanceBetweenPoints(routePoints.get(i), routePoints.get(i + 1));
+            Log.d("distance", String.valueOf(distance));
         }
         // convert to km
         distance = distance / 1000;
@@ -117,14 +141,14 @@ public class Route {
         for (int i = 0; i < routePoints.size() - 1; i++) {
 
             if(status == true){
-                distance += distanceBetweenPoints(routePoints.get(i), routePoints.get(i + 1));
+                double dist = distanceBetweenPoints(routePoints.get(i), routePoints.get(i + 1));
+                //convert to km, with 2 decimal places
+                distance = distance + (float) dist/1000 ;
             }
 
             if(routePoints.get(i).equals(section.getStartLocation())) status = true;
             if(routePoints.get(i).equals(section.getEndLocation())) status = false;
         }
-        // convert to km
-        distance = distance / 1000;
         section.setDistance(distance);
     }
 
@@ -313,17 +337,6 @@ public class Route {
         polylineSegments.add(polylineOptions);
     }
 
-    public List<PolylineOptions> getPolylineSegments() {
-        return polylineSegments;
-    }
-
-    public List<LatLng> getRoutePoints() {
-        return routePoints;
-    }
-
-    public Marker getEndMarker() {
-        return endMarker;
-    }
 
     public BitmapDescriptor setIcon(Context context, int iconId, int width, int height) {
         Drawable vectorDrawable = context.getDrawable(iconId);
@@ -343,10 +356,31 @@ public class Route {
         return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 
-    private double distanceBetweenPoints(LatLng p1, LatLng p2) {
+    private double badDistanceBetweenPoints(LatLng p1, LatLng p2) {
         double dx = p1.latitude - p2.latitude;
         double dy = p1.longitude - p2.longitude;
         return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    public static double distanceBetweenPoints(LatLng p1, LatLng p2){
+        final double R = 6371.0;
+
+        // Convert latitude and longitude from degrees to radians
+        double lat1Rad = Math.toRadians(p1.latitude);
+        double lon1Rad = Math.toRadians(p1.longitude);
+        double lat2Rad = Math.toRadians(p2.latitude);
+        double lon2Rad = Math.toRadians(p2.longitude);
+
+        // Calculate the differences in coordinates
+        double dlat = lat2Rad - lat1Rad;
+        double dlon = lon2Rad - lon1Rad;
+
+        // Haversine formula
+        double a = Math.sin(dlat / 2) * Math.sin(dlat / 2) + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dlon / 2) * Math.sin(dlon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        // Calculate and return the distance
+        return R * c * 1000;
     }
 }
 
