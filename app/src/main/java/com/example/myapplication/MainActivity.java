@@ -2,13 +2,10 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-import android.graphics.Point;
 import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -24,18 +21,14 @@ import android.widget.ListView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.speech.tts.TextToSpeech;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
-import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -45,8 +38,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
+import com.google.firebase.FirebaseApp;
 
-import java.sql.Time;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,10 +83,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        FirebaseApp.initializeApp(this);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         currentRoute = new Route("current");
-        //initialize repo from file
-        routeRepo = new RouteRepo("route_repo.json");
+
 
         saveLayout = findViewById(R.id.routeSaveLayout);
         saveLayout.setVisibility(View.GONE);
@@ -113,6 +106,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .findFragmentById(R.id.maps);
         assert mapFragment != null;
         mapFragment.getMapAsync(this);
+
+        routeRepo = new RouteRepo(getApplicationContext());
 
         // Start button
         startButton = findViewById(R.id.startButton);
@@ -143,8 +138,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     // Save the route
                     Route routeToSave = currentRoute.clone();
                     routeToSave.setName(name);
-                    routeRepo.addRoute(name, routeToSave);
                     routeToSave.addRouteToMap(mMap, MainActivity.this);
+                    routeRepo.addRoute(name, routeToSave);
                     routeName.setText("");
                     saveLayout.setVisibility(View.GONE); // Hide the dialog
                     //reset current route
@@ -164,7 +159,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 /// Handle discard button click
                 currentRoute.removeRoute(); // Remove the current route
 
-                //redwraw the map
+                // Redraw the map
                 redrawMap();
 
                 // Reset the dialog
@@ -179,6 +174,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         showRouteListButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                redrawMap();
                 showRouteListDialog();
                 selectLayout.setVisibility(View.GONE);
                 editLayout.setVisibility(View.GONE);
@@ -310,9 +306,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
 
             //add a debugging routes to the map for testing
-            testCluj();
-            testBaiaMare();
-            testLangaBlocCluj();
+//            testCluj();
+//            testBaiaMare();
+//            testLangaBlocCluj();
 
 
         } else {
@@ -361,7 +357,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     if (currentRoute.getEndMarker() != null) {
                         currentRoute.getEndMarker().remove();
                     }
-                    currentRoute.updateEndMarker(marker);
+                    currentRoute.setEndMarker(marker);
                 }
                 if (recording_run){
                     mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
@@ -599,7 +595,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                routeRepo.deleteRoute(routeName);
+                routeRepo.removeRoute(routeName);
                 redrawMap();
                 deleteLayout.setVisibility(View.GONE);
             }
@@ -815,25 +811,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //add the new marker to checkpoints if not null
-                //green
+                // Add the new marker to checkpoints if not null
+                // Green
                 String type = typeSpinner.getSelectedItem().toString();
                 String difficulty = difficultySpinner.getSelectedItem().toString();
-                //Toast the type
+                // Toast the type
                 Toast.makeText(MainActivity.this,type +", "+difficulty, Toast.LENGTH_SHORT).show();
                 if (startSectionMarker != null && stopSectionMarker != null) {
 
-                    //check if start and stop are in order and get the middle
-                    //include the route
+                    // Check if start and stop are in order and get the middle
                     middleSectionMarker=placement(startSectionMarker,stopSectionMarker,selectedRoute);
-                    //
                     selectedRoute.addSection(startSectionMarker, middleSectionMarker, stopSectionMarker,type,difficulty,MainActivity.this,mMap);
-                    //redraw the route
+                    // Redraw the route
                     startSectionMarker.remove();
                     stopSectionMarker.remove();
                     middleSectionMarker.remove();
                     redrawMap();
-                    //clear the edit layout
+                    // Clear the edit layout
                     sectionEditText.setText("");
 //                    editLayout.setVisibility(View.GONE);
 //                    mMap.setOnPolylineClickListener(null);

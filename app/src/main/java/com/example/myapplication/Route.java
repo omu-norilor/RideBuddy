@@ -6,7 +6,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.BitmapDescriptor;
@@ -33,7 +32,6 @@ public class Route {
     private Float distance;
     private String time;
 
-
     public Route( String name) {
         this.name = name;
         PolylineOptions polylineOptions= new PolylineOptions().clickable(true);
@@ -41,24 +39,11 @@ public class Route {
         polylineSegments.add(polylineOptions);
 
     }
-
-    public Map<LatLng, Section> getSections() {
-        return sections;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     @Override
     public Route clone() {
         Route route = new Route(this.getName());
         route.setStartMarker(startMarker);
-        route.updateEndMarker(endMarker);
+        route.setEndMarker(endMarker);
         route.setPolylineSegments(polylineSegments);
         route.setRoutePoints(routePoints);
         route.setCheckpoints((HashMap<LatLng, Section>) sections);
@@ -66,53 +51,56 @@ public class Route {
         route.setTimePoints(timePoints);
         return route;
     }
-
-    private void setTimePoints(List<Long> timePoints) {
-        this.timePoints = new ArrayList<>(timePoints);
+    ///-----------------------------------------------------///
+    ///-----------------Getters and Setters-----------------///
+    ///-----------------------------------------------------///
+    public Map<LatLng, Section> getSections() {return sections;}
+    public String getName() {
+        return name;
     }
-
-    private void setDistance(Float distance) {
-        this.distance = distance;
-    }
-
     public Float getDistance() {
         return distance;
     }
-
     public String getTime() {
         return time;
-    }
-
-    public void setTime(String time) {
-        if (this.time == null)
-            this.time = time;
-        else if (time.compareTo(this.time) < 0)
-            this.time = time;
     }
     public List<PolylineOptions> getPolylineSegments() {
         return polylineSegments;
     }
-
     public List<LatLng> getRoutePoints() {
         return routePoints;
     }
-
+    public List<Long> getTimePoints() {return timePoints;}
     public Marker getEndMarker() {
         return endMarker;
     }
-
-    private void setRoutePoints(List<LatLng> routePoints) {
-        this.routePoints = new ArrayList<>(routePoints);
+    public void setName(String name) {
+        this.name = name;
     }
-
-    private void setCheckpoints(HashMap<LatLng,Section> sections) {
-        this.sections = new HashMap<>(sections);
+    public void setPolylineSegments(List<PolylineOptions> polylineOptions) { this.polylineSegments = new ArrayList<>(polylineOptions); }
+    public Marker getStartMarker() {
+        return startMarker;
     }
-
-    public Map<LatLng,Section> getCheckpoints() {
-        return sections;
+    public void setStartMarker(Marker marker) { startMarker = marker; }
+    public void setEndMarker(Marker marker) {
+        endMarker = marker;
     }
+//    public void setRoutePoints(List<LatLng>routePoints) { this.routePoints = new ArrayList<>(routePoints);}
+    public void setSections(Map<LatLng, Section> sections) {
+        this.sections =  sections;
+    }
+    public void setTimePoints(List<Long> timePoints) { this.timePoints = new ArrayList<>(timePoints); }
+    public void setDistance(Float distance) {
+        this.distance = distance;
+    }
+    public void setTime(String time) { if (this.time == null || time.compareTo(this.time) < 0) this.time = time; }
+    public void setRoutePoints(List<LatLng> routePoints) { this.routePoints = new ArrayList<>(routePoints);}
+    private void setCheckpoints(HashMap<LatLng,Section> sections) { this.sections = new HashMap<>(sections); }
 
+
+    ///-----------------------------------------------------///
+    ///-----------------calcultate functions----------------///
+    ///-----------------------------------------------------///
     public void calculateDistance() {
         float distance = 0;
         for (int i = 0; i < routePoints.size() - 1; i++) {
@@ -123,7 +111,6 @@ public class Route {
         distance = distance / 1000;
         this.distance = distance;
     }
-
     public void calculateTime(){
         long time = 0;
 
@@ -134,7 +121,6 @@ public class Route {
         //calculate time
         time = endTime - startTime;
     }
-
     public void calculateSectionDistance(Section section){
         float distance = 0;
         boolean status = false;
@@ -146,26 +132,49 @@ public class Route {
                 distance = distance + (float) dist/1000 ;
             }
 
-            if(routePoints.get(i).equals(section.getStartLocation())) status = true;
-            if(routePoints.get(i).equals(section.getEndLocation())) status = false;
+            if(routePoints.get(i).equals(section.getLocationStart())) status = true;
+            if(routePoints.get(i).equals(section.getLocationEnd())) status = false;
         }
         section.setDistance(distance);
     }
-
     public void calculateSectionTime(Section section){
         long time = 0;
         Long startTime = Long.valueOf(0);
         Long endTime = Long.valueOf(0);
-        //get ends
+        // Get ends
         for (int i = 0; i < routePoints.size() - 1; i++) {
-            if(routePoints.get(i).equals(section.getStartLocation())) startTime = timePoints.get(i);
-            if(routePoints.get(i).equals(section.getEndLocation())) endTime = timePoints.get(i);
+            if(routePoints.get(i).equals(section.getLocationStart())) startTime = timePoints.get(i);
+            if(routePoints.get(i).equals(section.getLocationEnd())) endTime = timePoints.get(i);
         }
-
-        //calculate time
+        // Calculate time
         time = endTime - startTime;
         section.setTime(time);
     }
+    public static double distanceBetweenPoints(LatLng p1, LatLng p2){
+        final double R = 6371.0;
+
+        // Convert latitude and longitude from degrees to radians
+        double lat1Rad = Math.toRadians(p1.latitude);
+        double lon1Rad = Math.toRadians(p1.longitude);
+        double lat2Rad = Math.toRadians(p2.latitude);
+        double lon2Rad = Math.toRadians(p2.longitude);
+
+        // Calculate the differences in coordinates
+        double dlat = lat2Rad - lat1Rad;
+        double dlon = lon2Rad - lon1Rad;
+
+        // Haversine formula
+        double a = Math.sin(dlat / 2) * Math.sin(dlat / 2) + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dlon / 2) * Math.sin(dlon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        // Calculate and return the distance
+        return R * c * 1000;
+    }
+
+
+    ///-----------------------------------------------------///
+    ///-----------------add remove functions----------------///
+    ///-----------------------------------------------------///
 
     public void addSection(Marker startMarker,Marker middleMarker,Marker endMarker, String type, String difficulty, Context context, GoogleMap mMap) {
         //find closest route point
@@ -175,6 +184,8 @@ public class Route {
         double minDistanceStart = Double.MAX_VALUE;
         double minDistanceMiddle = Double.MAX_VALUE;
         double minDistanceEnd = Double.MAX_VALUE;
+
+        // For selected start and end markers and the calculated middleMarker, find the closest route points to associate with them
         for (LatLng routePoint : routePoints.toArray(new LatLng[0])) {
             double distanceStart = Math.sqrt(Math.pow(routePoint.latitude - startMarker.getPosition().latitude, 2) + Math.pow(routePoint.longitude - startMarker.getPosition().longitude, 2));
             if (distanceStart < minDistanceStart) {
@@ -195,7 +206,7 @@ public class Route {
             }
         }
 
-        //mark closest route point as checkpoint
+        // Mark closest route point as checkpoint
         startMarker.setPosition(closestRoutePointStart);
         endMarker.setPosition(closestRoutePointEnd);
         middleMarker.setPosition(closestRoutePointMiddle); // TODO this may be wrong, the program seemed to work without it
@@ -206,11 +217,102 @@ public class Route {
         rebuildRoute(mMap,context);
     }
 
-    private void rebuildRoute(GoogleMap mMap, Context context) {
+    public void addRouteToMap(GoogleMap mMap, Context context) {
+        // Add each route point to map to the polyline options
+        PolylineOptions currentPolyline= new PolylineOptions().clickable(true);
+        calculateDistance();
+        calculateTime();
+        String colors = "";
+        try {
+            String color= "#808080"; //gray
+            String type = "default";
+            String name = "default";
+            currentPolyline.color(Color.parseColor(color));
 
-        //remove old route
-        //add new route
+            for (int i=0; i<routePoints.size(); i++) {
+                // If route point is a checkpoint, add a marker and change color
+                LatLng routePoint = routePoints.get(i);
+                if (sections.containsKey(routePoint)) {
+                    // Add current polyline segment to map
+                    // The current polyline is not a special section
+                    currentPolyline.add(routePoint);
+                    mMap.addPolyline(currentPolyline);
+                    polylineSegments.add(currentPolyline);
+
+                    // Start new polyline segment
+                    currentPolyline = new PolylineOptions().clickable(false);
+                    Section currentSection = sections.get(routePoint);
+                    color = currentSection.getColor();
+                    name=currentSection.getTitle();
+                    colors=colors+"; "+name+":"+color+","+type+","+currentSection.getDifficulty();
+                    currentPolyline.color(Color.parseColor(color));
+
+                    // Add middle marker
+                    mMap.addMarker(new MarkerOptions().position(currentSection.getLocationMiddle()).title(currentSection.getTitle())).setIcon(setIcon(context,currentSection.getIcon(),120,160)); //TODO: add icon
+
+                    // Add route points until section finish
+                    currentPolyline.add(routePoint);
+                    while(distanceBetweenPoints(routePoint,currentSection.getLocationEnd()) != 0){
+                        i++;
+                        routePoint = routePoints.get(i);
+                        currentPolyline.add(routePoint);
+                    }
+                    // Increment i to skip the end location
+                    i++;
+                    // Add polyline segment to map
+                    mMap.addPolyline(currentPolyline);
+                    polylineSegments.add(currentPolyline);
+
+                    // Start new polyline segment
+                    currentPolyline = new PolylineOptions().clickable(true);
+                    color = "#808080"; // Gray
+                    type = "default";
+                    name = "default";
+                    currentPolyline.color(Color.parseColor(color));
+                }
+                currentPolyline.add(routePoint);
+            }
+
+            // Add last polyline segment to map
+            mMap.addPolyline(currentPolyline);
+
+            // Add start and end markers
+            this.startMarker = mMap.addMarker(new MarkerOptions().position(this.getRoutePoints().get(0)).title("Start of " + this.name));
+            this.startMarker.setIcon(setIcon(context,R.drawable.start,120,120));
+            this.endMarker = mMap.addMarker(new MarkerOptions().position(this.getRoutePoints().get(this.getRoutePoints().size() - 1)).title("End of " + this.name));
+            this.endMarker.setIcon(setIcon(context,R.drawable.finish,120,120));
+//            Toast.makeText(context, "Route added with colors: " + colors, Toast.LENGTH_SHORT).show();
+            Log.d("Route", "Route added with colors: " + colors);
+        }
+        catch (NullPointerException e) {
+            // Handle the NullPointerException and show an error message using a Toast
+//            Toast.makeText(context, "An error occurred: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log .d("Route", "An error occurred: " + e.getMessage());
+
+        }
+    }
+    public void addRoutePoint(LatLng latLng) {
+        routePoints.add(latLng);
+        timePoints.add(System.currentTimeMillis());
+        polylineSegments.get(polylineSegments.size() - 1).add(latLng);
+    }
+    private void rebuildRoute(GoogleMap mMap, Context context) {
+        //remove old route and add new route
         addRouteToMap(mMap,context);
+    }
+    public void removeRoute() {
+        //remove markers
+        if (startMarker != null) {
+            startMarker.remove();
+        }
+        if (endMarker != null) {
+            endMarker.remove();
+        }
+        routePoints.clear();
+        timePoints.clear();
+        PolylineOptions polylineOptions = new PolylineOptions().clickable(true);
+        polylineOptions.color(Color.parseColor("#FF6750A3"));
+        polylineSegments.add(polylineOptions);
     }
     private Section getNthSection(int n) {
         int i = 0;
@@ -226,118 +328,6 @@ public class Route {
         }
         return Section.DEFAULT;
     }
-    public void addRouteToMap(GoogleMap mMap, Context context) {
-        //add each route point to map to the polyline options
-        PolylineOptions currentPolyline= new PolylineOptions().clickable(true);
-        calculateDistance();
-        calculateTime();
-        String colors = "";
-        try {
-            String color= "#808080"; //gray
-            String type = "default";
-            String name = "default";
-            currentPolyline.color(Color.parseColor(color));
-
-            for (int i=0; i<routePoints.size(); i++) {
-                //if route point is a checkpoint, add a marker and change color
-                LatLng routePoint = routePoints.get(i);
-                if (sections.containsKey(routePoint)) {
-                    //add current polyline segment to map
-                    // the current polyline is not a special section
-                    currentPolyline.add(routePoint);
-                    mMap.addPolyline(currentPolyline);
-                    polylineSegments.add(currentPolyline);
-
-                    //start new polyline segment
-                    currentPolyline = new PolylineOptions().clickable(false);
-                    Section currentSection = sections.get(routePoint);
-                    color = currentSection.getColor();
-                    name=currentSection.getTitle();
-                    colors=colors+"; "+name+":"+color+","+type+","+currentSection.getDifficulty();
-                    currentPolyline.color(Color.parseColor(color));
-                    //add start marker, middle marker, and end marker
-//                    mMap.addMarker(new MarkerOptions().position(routePoint).title(currentSection.getTitle())); //TODO: add icon
-                    mMap.addMarker(new MarkerOptions().position(currentSection.getMiddleLocation()).title(currentSection.getTitle())).setIcon(setIcon(context,currentSection.getIcon(),120,160)); //TODO: add icon
-//                    mMap.addMarker(new MarkerOptions().position(currentSection.getEndLocation()).title(currentSection.getTitle())); //TODO: add icon
-
-                    //add route points until section finish
-                    currentPolyline.add(routePoint);
-                    while(distanceBetweenPoints(routePoint,currentSection.getEndLocation()) != 0){
-                        i++;
-                        routePoint = routePoints.get(i);
-                        currentPolyline.add(routePoint);
-                    }
-                    // increment i to skip the end location
-                    i++;
-                    //add polyline segment to map
-                    mMap.addPolyline(currentPolyline);
-                    polylineSegments.add(currentPolyline);
-
-                    //start new polyline segment
-                    currentPolyline = new PolylineOptions().clickable(true);
-                    color = "#808080"; //gray
-                    type = "default";
-                    name = "default";
-                    currentPolyline.color(Color.parseColor(color));
-                }
-                currentPolyline.add(routePoint);
-            }
-            mMap.addPolyline(currentPolyline);
-            mMap.addMarker(new MarkerOptions().position(this.getRoutePoints().get(0)).title("Start of " + this.name)).setIcon(setIcon(context,R.drawable.start,120,120));
-            mMap.addMarker(new MarkerOptions().position(this.getRoutePoints().get(this.getRoutePoints().size() - 1)).title("End of " + this.name)).setIcon(setIcon(context,R.drawable.finish,120,120));
-            Toast.makeText(context, "Route added with colors: " + colors, Toast.LENGTH_SHORT).show();
-        }
-        catch (NullPointerException e) {
-            // Handle the NullPointerException and show an error message using a Toast
-            Toast.makeText(context, "An error occurred: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-
-        }
-    }
-
-    public void setPolylineSegments(List<PolylineOptions> polylineOptions) {
-        this.polylineSegments = new ArrayList<>(polylineOptions);
-    }
-
-    public Marker getStartMarker() {
-        return startMarker;
-    }
-    public void setStartMarker(Marker marker) {
-        startMarker = marker;
-    }
-
-    public void updateEndMarker(Marker marker) {
-        endMarker = marker;
-    }
-    public void addRoutePoint(LatLng latLng) {
-        routePoints.add(latLng);
-        timePoints.add(System.currentTimeMillis());
-
-        polylineSegments.get(polylineSegments.size() - 1).add(latLng);
-    }
-
-    public void removeRoute() {
-        //remove markers
-        if (startMarker != null) {
-            startMarker.remove();
-        }
-        if (endMarker != null) {
-            endMarker.remove();
-        }
-        routePoints.clear();
-        timePoints.clear();
-
-        //remove polyline segments
-//        for (PolylineOptions polylineSegment : polylineSegments) {
-//            polylineSegment.remove();
-//        }
-
-
-        PolylineOptions polylineOptions = new PolylineOptions().clickable(true);
-        polylineOptions.color(Color.parseColor("#FF6750A3"));
-        polylineSegments.add(polylineOptions);
-    }
-
-
     public BitmapDescriptor setIcon(Context context, int iconId, int width, int height) {
         Drawable vectorDrawable = context.getDrawable(iconId);
 
@@ -354,33 +344,6 @@ public class Route {
         vectorDrawable.draw(canvas);
 
         return BitmapDescriptorFactory.fromBitmap(bitmap);
-    }
-
-    private double badDistanceBetweenPoints(LatLng p1, LatLng p2) {
-        double dx = p1.latitude - p2.latitude;
-        double dy = p1.longitude - p2.longitude;
-        return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    public static double distanceBetweenPoints(LatLng p1, LatLng p2){
-        final double R = 6371.0;
-
-        // Convert latitude and longitude from degrees to radians
-        double lat1Rad = Math.toRadians(p1.latitude);
-        double lon1Rad = Math.toRadians(p1.longitude);
-        double lat2Rad = Math.toRadians(p2.latitude);
-        double lon2Rad = Math.toRadians(p2.longitude);
-
-        // Calculate the differences in coordinates
-        double dlat = lat2Rad - lat1Rad;
-        double dlon = lon2Rad - lon1Rad;
-
-        // Haversine formula
-        double a = Math.sin(dlat / 2) * Math.sin(dlat / 2) + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dlon / 2) * Math.sin(dlon / 2);
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        // Calculate and return the distance
-        return R * c * 1000;
     }
 }
 

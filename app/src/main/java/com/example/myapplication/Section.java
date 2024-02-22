@@ -82,19 +82,21 @@ public class Section {
         return title;
     }
 
-    public LatLng getStartLocation(){
+    public LatLng getLocationStart(){
         return locationStart;
     }
 
-    public LatLng getMiddleLocation(){ return locationMiddle; }
+    public LatLng getLocationMiddle(){ return locationMiddle; }
 
-    public LatLng getEndLocation(){ return locationEnd; }
+    public LatLng getLocationEnd(){ return locationEnd; }
 
     public String getColor(){
         return color;
     }
 
     public String getType(){ return type; }
+
+    public Long getTime(){ return time; }
 
     public int getIcon(){ return icon; }
 
@@ -117,6 +119,8 @@ public class Section {
     public void setType(String type){ this.type = type; }
 
     public void setDistance(Float distance){ this.distance = distance; }
+
+    public void setTime(Long time){ this.time = time; }
 
     public Section clone() {
         return new Section(this.title, this.locationStart, this.locationMiddle, this.locationEnd, this.type, this.difficulty, this.distance, this.time);
