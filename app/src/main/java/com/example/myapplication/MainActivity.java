@@ -2,6 +2,7 @@ package com.example.myapplication;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -44,6 +45,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -87,6 +89,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
         currentRoute = new Route("current");
 
+        User user = new User("","","", false, new HashMap<>(), new ArrayList<>());
+        Intent intent = getIntent();
+        user.setEmail(intent.getStringExtra("email"));
+        user.setPassword(intent.getStringExtra("password"));
+        boolean isNewUser = intent.getBooleanExtra("isNewUser", false);
+        if (isNewUser) {
+            // If not a new user, retrieve additional extras
+            user.setUsername(intent.getStringExtra("username"));
+            user.setPremium(intent.getBooleanExtra("premiumStatus", false));
+        }
 
         saveLayout = findViewById(R.id.routeSaveLayout);
         saveLayout.setVisibility(View.GONE);
@@ -107,7 +119,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         assert mapFragment != null;
         mapFragment.getMapAsync(this);
 
-        routeRepo = new RouteRepo(getApplicationContext());
+        Callback callback = new Callback() {
+            @Override
+            public void onSuccess() {
+                Log.d("RouteRepo", "DIN PUTEREA ZEILOR INVOC PUTEREA STRABUNILOR SAMBAG PULAN FAMILIA TA ANDROID"+routeRepo.getRouteNames().toString());
+                Log.d("RouteRepo", "User gotten: " + routeRepo.getUser().getEmail() + " " + routeRepo.getUser().getPassword() + " " + routeRepo.getUser().getUsername()) ;
+                redrawMap();
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Handle error
+            }
+        };
+
+        routeRepo = new RouteRepo(getApplicationContext(), user, isNewUser, callback);
 
         // Start button
         startButton = findViewById(R.id.startButton);
@@ -391,7 +417,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             tts.speak("You got off the trail. Run ended in "+totalTime.toString(), TextToSpeech.QUEUE_FLUSH, null);
                         }
                         if (atEnd == true){
-                            currentRoute.setTime(time);
+                            currentRoute.compareTime(time);
                             Toast.makeText(MainActivity.this, "You finished the route in "+totalTime.toString(), Toast.LENGTH_SHORT).show();
                             tts.speak("You finished the route in "+totalTime.toString(), TextToSpeech.QUEUE_FLUSH, null);
                         }

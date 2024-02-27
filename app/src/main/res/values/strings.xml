@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">Ride buddy</string>
     <string-array name="type_options">
-<!--        flowy stuff-->
+        <!--        flowy stuff-->
         <item>Jumps</item>
         <item>Drops</item>
         <item>Berms</item>
-<!--        Technical stuff-->
+        <!--        Technical stuff-->
         <item>Rock Garden</item>
         <item>Steep</item>
         <item>Off Camber</item>

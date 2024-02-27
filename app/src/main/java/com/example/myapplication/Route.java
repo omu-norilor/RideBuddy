@@ -93,7 +93,8 @@ public class Route {
     public void setDistance(Float distance) {
         this.distance = distance;
     }
-    public void setTime(String time) { if (this.time == null || time.compareTo(this.time) < 0) this.time = time; }
+    public void compareTime(String time) { if (this.time == null || time.compareTo(this.time) < 0) this.time = time; }
+    public void setTime(String time) { this.time = time; }
     public void setRoutePoints(List<LatLng> routePoints) { this.routePoints = new ArrayList<>(routePoints);}
     private void setCheckpoints(HashMap<LatLng,Section> sections) { this.sections = new HashMap<>(sections); }
 
