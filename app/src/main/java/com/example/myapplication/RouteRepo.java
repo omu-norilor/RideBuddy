@@ -12,6 +12,8 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -26,6 +28,7 @@ public class RouteRepo {
     private Map<String, Route> routes = new HashMap<>();
     private User user = new User();
     FirebaseDatabaseHelper DBHandler;
+
     AtomicInteger operationsCompleted = new AtomicInteger(0);
 
     public RouteRepo(Context context, User user, boolean isNewUser,Callback callback) {
@@ -69,6 +72,7 @@ public class RouteRepo {
                 public void onSuccess(String userId) {
                     // Optionally handle success
                     Log.d("RouteRepo", "User added with id: " + userId);
+                    setUserId(userId);
                     operationCallback.onSuccess(null);
                 }
                 @Override
@@ -95,6 +99,10 @@ public class RouteRepo {
                 }
             });
         }
+    }
+
+    private void setUserId(String userId) {
+        user.setFirebaseId(userId);
     }
 
     private void setUser(User data) {
@@ -149,12 +157,23 @@ public class RouteRepo {
 
     public void setRouteTimes() {
         // set personal times for the routes
-        if( user.getTimes() == null)
+        if( user.getRuns() == null)
             return;
-        for (String routeName : user.getTimes().keySet()) {
-            List<String> times = user.getTimes().get(routeName);
-            String shortestTime = getShortestTime(times);
-            Objects.requireNonNull(routes.get(routeName)).setTime(shortestTime);
+
+        List<String> updatedRoutes = new ArrayList<>();
+        for (SerializableRun run: user.getRuns()) {
+            String time = run.getTime();
+            Route route = routes.get(run.getRouteName());
+            if (route.getTime() == null || time.compareTo(route.getTime()) < 0) // if the new time is the global best time, update it
+            {
+                route.setTime(time);
+                routes.put(run.getRouteName(), route);
+                updatedRoutes.add(run.getRouteName());
+            }
+        }
+
+        for (String routeName : updatedRoutes) {
+            this.updateRoute(routeName, routes.get(routeName));
         }
     }
 
@@ -162,33 +181,24 @@ public class RouteRepo {
         Route route = routes.get(name);
         if (route.getTime() == null || time.compareTo(route.getTime()) < 0) // if the new time is the global best time, update it
         {
-            route.setTime(time);
+            route.setPersonalTime(time);
             routes.put(name, route);
             this.updateRoute(name, route);
         }
     }
 
-    public void updateUserTime(String name, String time) {
-        if(user.getRoutes().contains(name)) {
-            List<String> times = user.getTimes().get(name);
-            if (times == null) {
-                times = new ArrayList<>();
-                user.getTimes().put(name, times);
-            }
-            times.add(time);
-            user.getTimes().put(name, times);
-        }
-        else {
-            List<String> times = new ArrayList<>();
-            times.add(time);
-            user.getTimes().put(name, times);
-        }
+    public void updateUserTime(String routeName, String time) {
+        LocalDate currentDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+        String date = currentDate.format(formatter);
+        SerializableRun run = new SerializableRun(time, date, routeName);
+        user.addRun(run);
         this.updateUser(user);
 
     }
 
     private void updateUser(User user) {
-        DBHandler.updateUser(user, new FirebaseDatabaseHelper.DatabaseCallback<Void>() {
+        DBHandler.updateUser(user.getFirebaseId(),user, new FirebaseDatabaseHelper.DatabaseCallback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 // Optionally handle success
@@ -205,6 +215,9 @@ public class RouteRepo {
 
     public void addRoute(String name, Route route) {
         routes.put(name, route);
+        SerializableRoute serializableRoute = new SerializableRoute(route);
+        user.addRoute(name);
+        this.updateUser(user);
         DBHandler.addRoute(route, new FirebaseDatabaseHelper.DatabaseCallback<String>() {
             @Override
             public void onSuccess(String routeId) {
@@ -237,5 +250,6 @@ public class RouteRepo {
             }
         });
     }
+
 
 }

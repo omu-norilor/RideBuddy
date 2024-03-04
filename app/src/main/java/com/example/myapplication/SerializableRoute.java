@@ -16,10 +16,12 @@ public class SerializableRoute implements Serializable {
     private List<SerializableLatLng> routePoints = new ArrayList<>();
     private List<Long> timePoints = new ArrayList<>();
     private Map<String, SerializableSection> sections = new HashMap<>();
+    private List<String> users = new ArrayList<>();
     private Float distance;
     private String time;
     private SerializableLatLng locationStart;
     private SerializableLatLng locationEnd;
+    private boolean isPublic;
 
     // Required public, no-argument constructor
     public SerializableRoute() {
@@ -42,12 +44,14 @@ public class SerializableRoute implements Serializable {
 //        this.polylineSegments = route.getPolylineSegments();
         this.distance = route.getDistance();
         this.time = route.getTime();
+        this.isPublic = route.getIsPublic();
+        this.users = route.getUsers();
         this.locationStart = new SerializableLatLng(route.getStartMarker().getPosition());
         this.locationEnd = new SerializableLatLng(route.getEndMarker().getPosition());
     }
 
     public Route toRoute() {
-        Route route = new Route(name);
+        Route route = new Route(name, isPublic, users.get(0));
         ArrayList<LatLng> routePoints = new ArrayList<>();
         for (SerializableLatLng serializableLatLng : this.routePoints) {
             routePoints.add(serializableLatLng.toLatLng());
@@ -59,7 +63,8 @@ public class SerializableRoute implements Serializable {
             sections.put(SerializableLatLng.fromString(entry.getKey()).toLatLng(), entry.getValue().toSection());
         }
         route.setSections(sections);
-//        route.setPolylineSegments(polylineSegments);
+        route.setIsPublic(isPublic);
+        route.setUsers(users);
         route.setDistance(distance);
         route.setTime(time);
         return route;
@@ -96,6 +101,10 @@ public class SerializableRoute implements Serializable {
         return locationEnd;
     }
 
+    public boolean getIsPublic() { return isPublic; }
+
+    public List<String> getUsers() { return users; }
+
     //Setter methods for all fields
     public void setName(String name) {
         this.name = name;
@@ -122,5 +131,9 @@ public class SerializableRoute implements Serializable {
     public void setLocationEnd(SerializableLatLng locationEnd) {
         this.locationEnd = locationEnd;
     }
+
+    public void setPublic(boolean isPublic) { this.isPublic = isPublic; }
+
+    public void setUsers(List<String> users) { this.users = users; }
 
 }

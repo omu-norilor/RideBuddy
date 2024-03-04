@@ -16,6 +16,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -66,12 +67,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Button settingsButton;
     private GoogleMap mMap;
     private EditText routeName;
+    private CheckBox publicCheckBox;
     private LinearLayout saveLayout;
     private LinearLayout searchLayout;
     private LinearLayout routeLayout;
     private LinearLayout deleteLayout;
     private LinearLayout editLayout;
     private LinearLayout selectLayout;
+    private LinearLayout userLayout;
+    private LinearLayout visibilityLayout;
     private Route currentRoute;
     private Marker startSectionMarker;
     private Marker middleSectionMarker;
@@ -87,9 +91,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         FirebaseApp.initializeApp(this);
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
-        currentRoute = new Route("current");
 
-        User user = new User("","","", false, new HashMap<>(), new ArrayList<>());
+        User user = new User("","","", false, new ArrayList<>(), new ArrayList<>());
         Intent intent = getIntent();
         user.setEmail(intent.getStringExtra("email"));
         user.setPassword(intent.getStringExtra("password"));
@@ -99,6 +102,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             user.setUsername(intent.getStringExtra("username"));
             user.setPremium(intent.getBooleanExtra("premiumStatus", false));
         }
+
+        currentRoute = new Route("current", false, user.getEmail());
 
         saveLayout = findViewById(R.id.routeSaveLayout);
         saveLayout.setVisibility(View.GONE);
@@ -112,8 +117,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         editLayout.setVisibility(View.GONE);
         selectLayout = findViewById(R.id.routeSelectLayout);
         selectLayout.setVisibility(View.GONE);
+        userLayout = findViewById(R.id.userLayout);
+        userLayout.setVisibility(View.GONE);
+        visibilityLayout = findViewById(R.id.visibilityLayout);
+        visibilityLayout.setVisibility(View.GONE);
 
         routeName = findViewById(R.id.routeName);
+        publicCheckBox = findViewById(R.id.routePublic);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.maps);
         assert mapFragment != null;
@@ -126,6 +136,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Log.d("RouteRepo", "User gotten: " + routeRepo.getUser().getEmail() + " " + routeRepo.getUser().getPassword() + " " + routeRepo.getUser().getUsername()) ;
                 routeRepo.setRouteTimes();
                 settingsButton.setText("Hi, " + routeRepo.getUser().getUsername());
+//                testCluj();
+//                testBaiaMare();
+//                testLangaBlocCluj();
                 redrawMap();
             }
 
@@ -158,14 +171,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         // Settings button
         settingsButton = findViewById(R.id.userSettingsButton);
-//        settingsButton.setOnClickListener(v -> {
-//            Intent intent1 = new Intent(MainActivity.this, UserSettingsActivity.class);
-//            intent1.putExtra("email", user.getEmail());
-//            intent1.putExtra("password", user.getPassword());
-//            intent1.putExtra("username", user.getUsername());
-//            intent1.putExtra("premiumStatus", user.isPremium());
-//            startActivity(intent1);
-//        });
+        settingsButton.setOnClickListener(v -> {
+            openUserDialog();
+        });
 
         // Save button
         Button saveRouteButton = findViewById(R.id.save);
@@ -173,10 +181,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void onClick(View v) {
                 String name = routeName.getText().toString();
+                boolean isPublic = publicCheckBox.isChecked();
                 if (!name.isEmpty()) {
                     // Save the route
                     Route routeToSave = currentRoute.clone();
                     routeToSave.setName(name);
+                    routeToSave.setIsPublic(isPublic);
                     routeToSave.addRouteToMap(mMap, MainActivity.this);
                     routeRepo.addRoute(name, routeToSave);
                     routeName.setText("");
@@ -233,8 +243,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+
     private void testCluj() {
-        Route testRoute = new Route("test Cluj");
+        Route testRoute = new Route("test Cluj", false, "byefuvker@yahoo.com");
 
         //make it a straight line
         testRoute.addRoutePoint(new LatLng(46.7712, 23.6236));
@@ -271,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void testBaiaMare() {
-        Route testRoute = new Route("test Baia Mare");
+        Route testRoute = new Route("test Baia Mare", false, "byefuvker@yahoo.com");
 
         //make it a straight line, start at 47.6489, 23.5646
         testRoute.addRoutePoint(new LatLng(47.6489, 23.5646));
@@ -309,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void testLangaBlocCluj(){
-        Route testRoute = new Route("test langa Bloc Cluj");
+        Route testRoute = new Route("test langa Bloc Cluj",false,"byefuvker@yahoo.com");
         //make it a straight line
         testRoute.addRoutePoint(new LatLng(46.766295, 23.625854));
         testRoute.addRoutePoint(new LatLng(46.766314, 23.625970));
@@ -344,10 +355,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 17));
             }
 
-            //add a debugging routes to the map for testing
-//            testCluj();
-//            testBaiaMare();
-//            testLangaBlocCluj();
+
 
 
         } else {
@@ -464,7 +472,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         //Re-draw the saved routes from the repository
         for (String name : routeRepo.getRouteNames()) {
-            routeRepo.getRoute(name).addRouteToMap(mMap,MainActivity.this);
+            Route route = routeRepo.getRoute(name);
+            if(route.getIsPublic() || route.getUsers().contains(routeRepo.getUser().getEmail()))
+                route.addRouteToMap(mMap, MainActivity.this);
         }
     }
 
@@ -542,6 +552,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Button closeButton = routeLayout.findViewById(R.id.routeViewCloseButton);
         Button editButton = routeLayout.findViewById(R.id.routeViewEditButton);
         Button selectButton = routeLayout.findViewById(R.id.routeViewSelectButton);
+        Button visibilityButton = routeLayout.findViewById(R.id.routeViewVisibilityButton);
         TextView routeNameTextView = routeLayout.findViewById(R.id.routeNameTextView);
         TextView distanceTextView = routeLayout.findViewById(R.id.routeDistanceTextView);
         TextView globalTimeTextView = routeLayout.findViewById(R.id.routeGlobalTimeTextView);
@@ -555,7 +566,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             formattedDistance = String.format("Distance: %.2f meters", selectedRoute.getDistance()*1000);
         distanceTextView.setText(formattedDistance);
         globalTimeTextView.setText("Best overall time: "+selectedRoute.getTime());
-        personalTimeTextView.setText("Best overall time: "+selectedRoute.getTime());
+        personalTimeTextView.setText("Best personal time: "+selectedRoute.getPersonalTime());
         //zoom on center of route
 
         List<LatLng> routePoints = selectedRoute.getRoutePoints();
@@ -583,9 +594,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         deleteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                routeLayout.setVisibility(View.GONE);
-                //make sure the user wants to delete the route
-                safeDeleteRoute(routeName);
+                if (routeRepo.getUser().getRoutes().contains(routeName))
+                {
+                    routeLayout.setVisibility(View.GONE);
+                    //make sure the user wants to delete the route
+                    safeDeleteRoute(routeName);
+                }
+                else
+                    Toast.makeText(MainActivity.this, "You are not the owner of this route", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -603,12 +619,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         editButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                routeLayout.setVisibility(View.GONE);
-                openEditRouteDialog(selectedRoute,routeName);
-                closeButton.setOnClickListener(null);
-                selectButton.setOnClickListener(null);
-                deleteButton.setOnClickListener(null);
-                editButton.setOnClickListener(null);
+                if (routeRepo.getUser().getRoutes().contains(routeName)){
+                    routeLayout.setVisibility(View.GONE);
+                    openEditRouteDialog(selectedRoute,routeName);
+                    closeButton.setOnClickListener(null);
+                    selectButton.setOnClickListener(null);
+                    deleteButton.setOnClickListener(null);
+                    editButton.setOnClickListener(null);
+                }
+                else
+                    Toast.makeText(MainActivity.this, "You are not the owner of this route", Toast.LENGTH_SHORT).show();
+
             }
         });
 
@@ -621,6 +642,85 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 deleteButton.setOnClickListener(null);
                 editButton.setOnClickListener(null);
                 selectButton.setOnClickListener(null);
+            }
+        });
+
+
+        visibilityButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (routeRepo.getUser().getRoutes().contains(routeName)){
+                    routeLayout.setVisibility(View.GONE);
+                    openVisibilityDialog(routeName);
+                    closeButton.setOnClickListener(null);
+                    deleteButton.setOnClickListener(null);
+                    editButton.setOnClickListener(null);
+                    selectButton.setOnClickListener(null);
+                }
+                else
+                    Toast.makeText(MainActivity.this, "You are not the owner of this route", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void openVisibilityDialog( String routeName) {
+        // Find the dialog layout in activity_main.xml
+        visibilityLayout.setVisibility(View.VISIBLE);
+
+        // Find elements inside the dialog layout
+        ListView usersListView = visibilityLayout.findViewById(R.id.usersListView);
+        EditText searchEditText = visibilityLayout.findViewById(R.id.searchUserEditText);
+        Button cancelButton = visibilityLayout.findViewById(R.id.closeUserSearchButton);
+        Button grantButton = visibilityLayout.findViewById(R.id.grantVisibilityButton);
+
+
+        List<String> usernames =new ArrayList<>();
+//        routeRepo.getUsernames();
+//
+//        Callback callback = new Callback() {
+//            @Override
+//            public void onSuccess(List<String> names) {
+//                usernames.addAll(names);
+//            }
+//
+//            @Override
+//            public void onError(Exception e) {
+//                // Handle error
+//            }
+//        };
+        // Create an ArrayAdapter to populate the visibility Spinner with data
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, usernames);
+        // Set up edit text filter for the search EditText
+        searchEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                adapter.getFilter().filter(s);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        grantButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Grant visibility to the selected user
+                String selectedUser = (String) usersListView.getItemAtPosition(usersListView.getCheckedItemPosition());
+                routeRepo.getRoute(routeName).addUser(selectedUser);
+                routeRepo.updateRoute(routeName, routeRepo.getRoute(routeName));
+            }
+        });
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                visibilityLayout.setVisibility(View.GONE); // Hide the dialog
+                usersListView.setOnItemClickListener(null);
+                searchEditText.removeTextChangedListener(null);
+                cancelButton.setOnClickListener(null);
             }
         });
 
@@ -882,6 +982,106 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
 
+    private void openUserDialog() {
+
+        userLayout.setVisibility(View.VISIBLE);
+        // Find elements inside the dialog layout
+        EditText myRunsEditText = userLayout.findViewById(R.id.myRunsEditText);
+        EditText myRoutesEditText = userLayout.findViewById(R.id.myRoutesEditText);
+        ListView myRunsListView = userLayout.findViewById(R.id.myRunsListView);
+        ListView myRoutesListView = userLayout.findViewById(R.id.myRoutesListView);
+        Button closeButton = userLayout.findViewById(R.id.closeUserButton);
+
+        // Set up the list of runs
+        List<SerializableRun> runTimes = routeRepo.getUser().getRuns();
+        // Order the runs by date
+        Collections.sort(runTimes, new Comparator<SerializableRun>() {
+            @Override
+            public int compare(SerializableRun o1, SerializableRun o2) {
+                return o2.getDate().compareTo(o1.getDate());
+            }
+        });
+
+        ArrayAdapter<SerializableRun> runAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, runTimes);
+        myRunsListView.setAdapter(runAdapter);
+
+
+        if (runTimes.isEmpty()) {
+            Toast.makeText(MainActivity.this, "Cam gol la ture namasatemint", Toast.LENGTH_SHORT).show();
+        }
+        // on click listener for the runs
+//        myRunsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+//            @Override
+//            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+//                SerializableRun run = (SerializableRun) parent.getItemAtPosition(position);
+//                userLayout.setVisibility(View.GONE);
+//                myRunsListView.setOnItemClickListener(null);
+//                myRoutesListView.setOnItemClickListener(null);
+//                closeButton.setOnClickListener(null);
+//                openRunDialog(run);
+//            }
+//        });
+
+        // Set up the list of routes
+        List<String> routeNames = routeRepo.getUser().getRoutes();
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, routeNames);
+        myRoutesListView.setAdapter(adapter);
+
+        // on click listener for the routes
+        myRoutesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String routeName = (String) parent.getItemAtPosition(position);
+                Route route = routeRepo.getRoute(routeName);
+                userLayout.setVisibility(View.GONE);
+                myRunsListView.setOnItemClickListener(null);
+                myRoutesListView.setOnItemClickListener(null);
+                closeButton.setOnClickListener(null);
+                openRouteDialog(route, routeName);
+            }
+        });
+
+        // Set up a text filter for the myRunsEditText
+        myRunsEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                runAdapter.getFilter().filter(s);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // Set up a text filter for the myRoutesEditText
+        myRoutesEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                adapter.getFilter().filter(s);
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        });
+
+        // Set up the close button
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v ) {
+                userLayout.setVisibility(View.GONE);
+                myRunsListView.setOnItemClickListener(null);
+                myRoutesListView.setOnItemClickListener(null);
+                closeButton.setOnClickListener(null);
+            }
+        });
+    }
+
+
     private Marker placement(Marker start, Marker stop, Route selectedRoute){
         //iterate through points
         int section_length=0, start_index=-1, i=0;
@@ -961,8 +1161,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     // Function to calculate the distance between two LatLng points
-
-
     public static double distanceBetweenPoints(LatLng p1, LatLng p2){
         // Haversine formula
         final double R = 6371.0;
@@ -984,44 +1182,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         // Calculate and return the distance
         return R * c;
-    }
-    private static double badDistanceBetweenPoints(LatLng p1, LatLng p2) {
-        double lat1 = Math.toRadians(p1.latitude);
-        double lon1 = Math.toRadians(p1.longitude);
-        double lat2 = Math.toRadians(p2.latitude);
-        double lon2 = Math.toRadians(p2.longitude);
-
-        double dLat = lat2 - lat1;
-        double dLon = lon2 - lon1;
-
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1) * Math.cos(lat2) *
-                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        double EARTH_RADIUS = 6371000; // Radius of the earth in meters
-        return EARTH_RADIUS * c; // Distance in meters
-    }
-
-    public static double badDistanceToLine(LatLng point, LatLng lineStart, LatLng lineEnd) {
-        //get the line equation and return the distance from the given point to the line
-        float x0 = (float) point.longitude;
-        float y0 = (float) point.latitude;
-        float x1 = (float) lineStart.longitude;
-        float y1 = (float) lineStart.latitude;
-        float x2 = (float) lineEnd.longitude;
-        float y2 = (float) lineEnd.latitude;
-
-        float numerator = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
-        float denominator = (float) Math.sqrt(Math.pow(y2 - y1, 2) + Math.pow(x2 - x1, 2));
-
-        Log.d ("StayOnTrail", "point: " + point);
-        Log.d("StayOnTrail", "Line start: " + lineStart);
-        Log.d("StayOnTrail", "Line end: " + lineEnd);
-        Log.d("StayOnTrail", "Distance to line: " + numerator / denominator);
-
-        return numerator / denominator;
     }
 
     public static double distanceToLine(LatLng point, LatLng lineStart, LatLng lineEnd) {

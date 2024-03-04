@@ -98,6 +98,13 @@
             android:textColorHint="#FFFFFF"
             android:layout_margin="1dp"
             />
+        <!--ROUTE PUBLIC CHECKBOX-->
+        <CheckBox
+            android:id="@+id/routePublic"
+            android:layout_width="wrap_content"
+            android:layout_height="25dp"
+            android:textColor="#FFFFFF"
+            android:text="Make route public" />
         <!--ROUTE SAVE-->
         <Button
             android:id="@+id/save"
@@ -128,6 +135,8 @@
             android:layout_height="51dp"
             android:background="#DB91E7"
             android:textColor="@color/white"
+            android:textColorHint="@color/white"
+            android:padding="15dp"
             android:hint="Search routes" />
 
         <ListView
@@ -216,33 +225,59 @@
             android:textColor="#FFFFFF"
             android:textColorHint="#FFFFFF"
             />
-        <!--ROUTE SELECT-->
-        <Button
-            android:id="@+id/routeViewSelectButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Select" />
 
-        <!--ROUTE EDIT-->
-        <Button
-            android:id="@+id/routeViewEditButton"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Edit" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            >
 
-        <!--ROUTE DISCARD-->
+            <!--ROUTE SELECT-->
+            <Button
+                android:id="@+id/routeViewSelectButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" Select "
+                android:layout_marginRight="8dp"/>
+
+            <!--ROUTE CLOSE-->
+            <Button
+                android:id="@+id/routeViewCloseButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="  Close   " />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+            <!--ROUTE DISCARD-->
+            <Button
+                android:id="@+id/routeViewDeleteButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" Delete "
+                android:layout_marginRight="8dp"/>
+
+            <!--ROUTE EDIT-->
+            <Button
+                android:id="@+id/routeViewEditButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Sections" />
+
+
+        </LinearLayout>
+
         <Button
-            android:id="@+id/routeViewDeleteButton"
+            android:id="@+id/routeViewVisibilityButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Delete" />
-        <!--ROUTE CLOSE-->
-        <Button
-            android:id="@+id/routeViewCloseButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Close"
-            />
+            android:text="Set route visibility" />
 
     </LinearLayout>
 
@@ -414,6 +449,127 @@
             android:text="Start Route" />
     </LinearLayout>
 
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/white"
+        android:orientation="vertical"
+        android:id="@+id/userLayout"
+        >
 
+        <!-- Textview to greet the user -->
+        <TextView
+            android:id="@+id/greetingTextView"
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:text="Hi, username"
+            android:background="@drawable/square"
+            android:textColor="@color/white"
+            android:gravity="center"
+            android:textSize="23sp"/>
+
+        <EditText
+            android:id="@+id/myRunsEditText"
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:background="#DB91E7"
+            android:textColor="@color/black"
+            android:textColorHint="@color/black"
+            android:hint="Search recent runs"
+            android:padding="15dp"
+            android:textSize="16sp"
+            />>
+
+
+        <!-- ListView for "my routes" -->
+        <ListView
+            android:id="@+id/myRunsListView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:divider="@android:color/transparent"
+            android:clipToPadding="false"
+            android:scrollbars="none"
+            android:layout_weight="1"/>
+
+        <EditText
+            android:id="@+id/myRoutesEditText"
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:background="#DB91E7"
+            android:textColor="@color/black"
+            android:textColorHint="@color/black"
+            android:hint="Search my trails"
+            android:padding="15dp"
+            android:textSize="16sp"
+            />>
+
+        <!-- ListView for "my runs" -->
+        <ListView
+            android:id="@+id/myRoutesListView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/white"
+            android:divider="@android:color/transparent"
+            android:clipToPadding="false"
+            android:scrollbars="none"
+            android:layout_weight="1"
+            />
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:text="Close"
+            android:id="@+id/closeUserButton"
+            android:layout_gravity="center"
+            android:background="@drawable/square"
+            android:textColor="@color/white"
+            />
+    </LinearLayout>
+
+    <!--==========ROUTE LIST DIALOG======================-->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:id="@+id/visibilityLayout"
+        >
+
+        <EditText
+            android:id="@+id/searchUserEditText"
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:background="#DB91E7"
+            android:textColor="@color/white"
+            android:padding="15dp"
+            android:hint="Search users" />
+
+        <ListView
+            android:id="@+id/usersListView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/white"/>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:text="Grant access"
+            android:id="@+id/grantVisibilityButton"
+            android:layout_gravity="center"
+            android:background="@drawable/square_light"
+            android:textColor="@color/white"
+            />
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="51dp"
+            android:text="Close search"
+            android:id="@+id/closeUserSearchButton"
+            android:layout_gravity="center"
+            android:background="@drawable/square"
+            android:textColor="@color/white"
+            />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

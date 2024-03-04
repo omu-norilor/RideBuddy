@@ -61,10 +61,10 @@ public class FirebaseDatabaseHelper {
                 if (dataSnapshot.exists()) {
                     Map<String, Route> routes = new HashMap<>();
                     for (DataSnapshot routeSnapshot : dataSnapshot.getChildren()) {
-                        String FirebaseId = routeSnapshot.getKey();
+                        String firebaseId = routeSnapshot.getKey();
                         SerializableRoute sroute = routeSnapshot.getValue(SerializableRoute.class);
                         Route route = sroute.toRoute();
-                        route.setFirebaseId(FirebaseId);
+                        route.setFirebaseId(firebaseId);
 
                         if (route != null) {
                             routes.put(route.getName(), route);
@@ -82,6 +82,8 @@ public class FirebaseDatabaseHelper {
             }
         });
     }
+
+
 
     // Update
     public void updateRoute(String firebaseId, Route updatedRoute, final DatabaseCallback<Void> callback) {
@@ -132,40 +134,6 @@ public class FirebaseDatabaseHelper {
                     }
                 });
     }
-    public User getUserSync(String email) {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final User[] user = new User[1]; // Using an array to hold the user object
-
-        DatabaseCallback<User> callback = new DatabaseCallback<User>() {
-            @Override
-            public void onSuccess(User result) {
-                user[0] = result;
-                latch.countDown();
-            }
-
-            @Override
-            public void onError(Exception e) {
-                // Handle error, you might want to throw an exception or log it
-                latch.countDown();
-            }
-        };
-        try{
-            getUser(email, callback);
-        }
-        finally {
-            latch.countDown();
-        }
-
-        try {
-            // Wait for the latch until the callback is invoked
-            latch.await(4,java.util.concurrent.TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            // Handle interruption, throw an exception or log it
-        }
-
-        return user[0];
-    }
 
     public void getUser(String email, final DatabaseCallback<User> databaseCallback) {
         // Query the "users" node to find a user with the specified email
@@ -177,7 +145,9 @@ public class FirebaseDatabaseHelper {
                 if (dataSnapshot.exists()) {
                     // User with the specified email found
                     for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        String firebaseId = snapshot.getKey();
                         User user = snapshot.getValue(User.class);
+                        user.setFirebaseId(firebaseId);
                         databaseCallback.onSuccess(user);
                         return; // Stop iterating as we found a user
                     }
@@ -194,16 +164,44 @@ public class FirebaseDatabaseHelper {
         });
     }
 
-    public void updateUser(User user, DatabaseCallback<Void> databaseCallback) {
-        usersReference.child(user.getEmail())
-                .setValue(user)
+    public void getUsers(final DatabaseCallback<List<User>> callback) {
+        routesReference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    List<User> users = new ArrayList<>();
+                    for (DataSnapshot routeSnapshot : dataSnapshot.getChildren()) {
+                        String firebaseId = routeSnapshot.getKey();
+                        User user = routeSnapshot.getValue(User.class);
+                        user.setFirebaseId(firebaseId);;
+                        if (user != null) {
+                            users.add(user);
+                        }
+                    }
+                    callback.onSuccess(users);
+                } else {
+                    callback.onSuccess(new ArrayList<>());  // No data, return an empty map
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+                callback.onError(databaseError.toException());
+            }
+        });
+    }
+
+
+    public void updateUser(String firebaseId, User updatedUser, final DatabaseCallback<Void> callback) {
+        // Update the route data
+        usersReference.child(updatedUser.getFirebaseId()).setValue(updatedUser)
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(Task<Void> task) {
                         if (task.isSuccessful()) {
-                            databaseCallback.onSuccess(null);
+                            callback.onSuccess(null);
                         } else {
-                            databaseCallback.onError(task.getException());
+                            callback.onError(task.getException());
                         }
                     }
                 });

@@ -31,10 +31,16 @@ public class Route {
     private List<PolylineOptions> polylineSegments = new ArrayList<>();
     private Float distance;
     private String time;
+    private String personalTime;
     private String firebaseId;
+    private boolean isPublic;
+    private List<String> users = new ArrayList<>();
 
-    public Route( String name) {
+
+    public Route( String name, boolean isPublic, String email) {
         this.name = name;
+        this.isPublic = isPublic;
+        this.users.add(email);
         PolylineOptions polylineOptions= new PolylineOptions().clickable(true);
         polylineOptions.color(Color.parseColor("#808080"));
         polylineSegments.add(polylineOptions);
@@ -42,7 +48,7 @@ public class Route {
     }
     @Override
     public Route clone() {
-        Route route = new Route(this.getName());
+        Route route = new Route(this.getName(), this.isPublic, this.users.get(0));
         route.setStartMarker(startMarker);
         route.setEndMarker(endMarker);
         route.setPolylineSegments(polylineSegments);
@@ -56,15 +62,21 @@ public class Route {
     ///-----------------Getters and Setters-----------------///
     ///-----------------------------------------------------///
     public Map<LatLng, Section> getSections() {return sections;}
+    public String getFirebaseId() {
+        return firebaseId;
+    }
     public String getName() {
         return name;
     }
+    public boolean getIsPublic() { return isPublic; }
+    public List<String> getUsers() { return users; }
     public Float getDistance() {
         return distance;
     }
     public String getTime() {
         return time;
     }
+    public String getPersonalTime() { return personalTime; }
     public List<PolylineOptions> getPolylineSegments() {
         return polylineSegments;
     }
@@ -86,7 +98,7 @@ public class Route {
     public void setEndMarker(Marker marker) {
         endMarker = marker;
     }
-//    public void setRoutePoints(List<LatLng>routePoints) { this.routePoints = new ArrayList<>(routePoints);}
+    public void addUser(String email) { users.add(email);}
     public void setSections(Map<LatLng, Section> sections) {
         this.sections =  sections;
     }
@@ -96,9 +108,14 @@ public class Route {
     }
     public void updateTime(String time) { if (this.time == null || time.compareTo(this.time) < 0) this.time = time; }
     public void setTime(String time) { this.time = time; }
+    public void setPersonalTime(String personalTime) { this.personalTime = personalTime; }
     public void setRoutePoints(List<LatLng> routePoints) { this.routePoints = new ArrayList<>(routePoints);}
-    private void setCheckpoints(HashMap<LatLng,Section> sections) { this.sections = new HashMap<>(sections); }
-
+    public void setCheckpoints(HashMap<LatLng,Section> sections) { this.sections = new HashMap<>(sections); }
+    public void setFirebaseId(String firebaseId) {
+        this.firebaseId=firebaseId;
+    }
+    public void setIsPublic(boolean isPublic) { this.isPublic = isPublic; }
+    public void setUsers(List<String> users) { this.users = users; }
 
     ///-----------------------------------------------------///
     ///-----------------calcultate functions----------------///
@@ -355,14 +372,6 @@ public class Route {
                 polylineOptions.clickable(b);
             }
         }
-    }
-
-    public void setFirebaseId(String firebaseId) {
-        this.firebaseId=firebaseId;
-    }
-
-    public String getFirebaseId() {
-        return firebaseId;
     }
 }
 
