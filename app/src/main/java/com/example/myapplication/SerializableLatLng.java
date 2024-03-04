@@ -34,4 +34,22 @@ public class SerializableLatLng {
     public void setLongitude(double longitude) {
         this.longitude = longitude;
     }
+
+    @Override
+    public String toString() {
+        return String.format("%.6f_%.6f", latitude, longitude).replace('.', ';');
+    }
+
+    public static SerializableLatLng fromString(String serialized) {
+        // Replace ';' with '.' before parsing
+        serialized = serialized.replace(';', '.');
+
+        String[] parts = serialized.split("_");
+        double lat = Double.parseDouble(parts[0]);
+        double lng = Double.parseDouble(parts[1]);
+        SerializableLatLng result = new SerializableLatLng();
+        result.setLatitude(lat);
+        result.setLongitude(lng);
+        return result;
+    }
 }

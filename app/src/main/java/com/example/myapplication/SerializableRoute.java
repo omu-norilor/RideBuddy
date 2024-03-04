@@ -15,8 +15,7 @@ public class SerializableRoute implements Serializable {
     private String name;
     private List<SerializableLatLng> routePoints = new ArrayList<>();
     private List<Long> timePoints = new ArrayList<>();
-    private Map<SerializableLatLng, SerializableSection> sections = new HashMap<>();
-//    private List<PolylineOptions> polylineSegments = new ArrayList<>();
+    private Map<String, SerializableSection> sections = new HashMap<>();
     private Float distance;
     private String time;
     private SerializableLatLng locationStart;
@@ -38,7 +37,7 @@ public class SerializableRoute implements Serializable {
         this.timePoints = route.getTimePoints();
         this.sections = new HashMap<>();
         for (Map.Entry<LatLng, Section> entry : route.getSections().entrySet()) {
-            this.sections.put(new SerializableLatLng(entry.getKey()), new SerializableSection(entry.getValue()));
+            this.sections.put(new SerializableLatLng(entry.getKey()).toString(), new SerializableSection(entry.getValue()));
         }
 //        this.polylineSegments = route.getPolylineSegments();
         this.distance = route.getDistance();
@@ -56,8 +55,8 @@ public class SerializableRoute implements Serializable {
         route.setRoutePoints(routePoints);
         route.setTimePoints(timePoints);
         Map<LatLng, Section> sections = new HashMap<>();
-        for (Map.Entry<SerializableLatLng, SerializableSection> entry : this.sections.entrySet()) {
-            sections.put(entry.getKey().toLatLng(), entry.getValue().toSection());
+        for (Map.Entry<String, SerializableSection> entry : this.sections.entrySet()) {
+            sections.put(SerializableLatLng.fromString(entry.getKey()).toLatLng(), entry.getValue().toSection());
         }
         route.setSections(sections);
 //        route.setPolylineSegments(polylineSegments);
@@ -67,7 +66,6 @@ public class SerializableRoute implements Serializable {
     }
 
     // Getter methods for all fields
-
     public String getName() {
         return name;
     }
@@ -76,11 +74,9 @@ public class SerializableRoute implements Serializable {
         return routePoints;
     }
 
-    public List<Long> getTimePoints() {
-        return timePoints;
-    }
+    public List<Long> getTimePoints() { return timePoints; }
 
-    public Map<SerializableLatLng, SerializableSection> getSections() {
+    public Map<String, SerializableSection> getSections() {
         return sections;
     }
 
@@ -101,22 +97,17 @@ public class SerializableRoute implements Serializable {
     }
 
     //Setter methods for all fields
-
     public void setName(String name) {
         this.name = name;
     }
 
-    public void setRoutePoints(List<SerializableLatLng> routePoints) {
-        this.routePoints = routePoints;
-    }
+    public void setRoutePoints(List<SerializableLatLng> routePoints) { this.routePoints = routePoints; }
 
     public void setTimePoints(List<Long> timePoints) {
         this.timePoints = timePoints;
     }
 
-    public void setSections(Map<SerializableLatLng, SerializableSection> sections) {
-        this.sections = sections;
-    }
+    public void setSections(Map<String, SerializableSection> sections) { this.sections = sections; }
 
     public void setDistance(Float distance) {
         this.distance = distance;
@@ -126,9 +117,7 @@ public class SerializableRoute implements Serializable {
         this.time = time;
     }
 
-    public void setLocationStart(SerializableLatLng locationStart) {
-        this.locationStart = locationStart;
-    }
+    public void setLocationStart(SerializableLatLng locationStart) { this.locationStart = locationStart; }
 
     public void setLocationEnd(SerializableLatLng locationEnd) {
         this.locationEnd = locationEnd;

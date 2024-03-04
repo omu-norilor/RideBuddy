@@ -17,6 +17,19 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"></androidx.fragment.app.FragmentContainerView>
 
+    <!--============USER SETTINGS BUTTON==================-->
+    <Button
+        android:id="@+id/userSettingsButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hi, username "
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="46dp"
+        />
+
     <!--==========ROUTE LIST BUTTON======================-->
     <Button
         android:id="@+id/showRouteButton"
@@ -24,10 +37,9 @@
         android:layout_height="wrap_content"
         android:text="Show Routes"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginTop="16dp"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="46dp"
         android:layout_marginEnd="16dp"
         />
 
@@ -138,6 +150,7 @@
     </LinearLayout>
 
 
+
     <!--==========ROUTE VIEW DIALOG======================-->
     <LinearLayout
         android:id="@+id/routeViewLayout"
@@ -171,32 +184,43 @@
             android:layout_height="35dp"
             android:layout_marginTop="20dp"
             android:ems="10"
-            android:hint="Distance: no implemendo!"
+            android:hint="Distance: 100.98 kms"
             android:gravity="center"
             android:inputType="textPersonName"
             android:textColor="#FFFFFF"
             android:textColorHint="#FFFFFF"
-            android:layout_margin="1dp"
+            android:layout_margin="0dp"
             />
         <TextView
-            android:id="@+id/routeTimeTextView"
+            android:id="@+id/routeGlobalTimeTextView"
             android:layout_width="200dp"
             android:layout_height="35dp"
             android:layout_marginTop="20dp"
             android:ems="10"
-            android:hint="Best Time: no implemendo!"
+            android:hint="Best Time Overall: xx:xx:xx"
             android:gravity="center"
             android:inputType="textPersonName"
             android:textColor="#FFFFFF"
             android:textColorHint="#FFFFFF"
-            android:layout_margin="1dp"
+            android:layout_margin="0dp"
+            />
+        <TextView
+            android:id="@+id/routePersonalTimeTextView"
+            android:layout_width="200dp"
+            android:layout_height="35dp"
+            android:layout_marginTop="0dp"
+            android:ems="10"
+            android:hint="Your Best Time: xx:xx:xx"
+            android:gravity="center"
+            android:inputType="textPersonName"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#FFFFFF"
             />
         <!--ROUTE SELECT-->
         <Button
             android:id="@+id/routeViewSelectButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
             android:text="Select" />
 
         <!--ROUTE EDIT-->
@@ -204,7 +228,6 @@
             android:id="@+id/routeViewEditButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
             android:text="Edit" />
 
         <!--ROUTE DISCARD-->
@@ -212,14 +235,12 @@
             android:id="@+id/routeViewDeleteButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
             android:text="Delete" />
         <!--ROUTE CLOSE-->
         <Button
             android:id="@+id/routeViewCloseButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
             android:text="Close"
             />
 

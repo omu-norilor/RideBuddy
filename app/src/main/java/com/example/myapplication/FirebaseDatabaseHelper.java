@@ -33,8 +33,6 @@ public class FirebaseDatabaseHelper {
         usersReference = FirebaseDatabase.getInstance().getReference("users");
     }
 
-
-
     // Create
     public void addRoute(Route route, final DatabaseCallback<String> callback) {
         // Push a new child node under "routes" and get its key
@@ -63,8 +61,10 @@ public class FirebaseDatabaseHelper {
                 if (dataSnapshot.exists()) {
                     Map<String, Route> routes = new HashMap<>();
                     for (DataSnapshot routeSnapshot : dataSnapshot.getChildren()) {
+                        String FirebaseId = routeSnapshot.getKey();
                         SerializableRoute sroute = routeSnapshot.getValue(SerializableRoute.class);
                         Route route = sroute.toRoute();
+                        route.setFirebaseId(FirebaseId);
 
                         if (route != null) {
                             routes.put(route.getName(), route);
@@ -84,10 +84,9 @@ public class FirebaseDatabaseHelper {
     }
 
     // Update
-    public void updateRoute(String routeName, Route updatedRoute, final DatabaseCallback<Void> callback) {
-        routesReference.child(routeName)
-                .child("name")
-                .setValue(new SerializableRoute(updatedRoute))
+    public void updateRoute(String firebaseId, Route updatedRoute, final DatabaseCallback<Void> callback) {
+        // Update the route data
+        routesReference.child(updatedRoute.getFirebaseId()).setValue(new SerializableRoute(updatedRoute))
                 .addOnCompleteListener(new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(Task<Void> task) {
@@ -195,6 +194,20 @@ public class FirebaseDatabaseHelper {
         });
     }
 
+    public void updateUser(User user, DatabaseCallback<Void> databaseCallback) {
+        usersReference.child(user.getEmail())
+                .setValue(user)
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            databaseCallback.onSuccess(null);
+                        } else {
+                            databaseCallback.onError(task.getException());
+                        }
+                    }
+                });
+    }
 
     // Callback interface for handling asynchronous database operations
     public interface DatabaseCallback<T> {

@@ -31,6 +31,7 @@ public class Route {
     private List<PolylineOptions> polylineSegments = new ArrayList<>();
     private Float distance;
     private String time;
+    private String firebaseId;
 
     public Route( String name) {
         this.name = name;
@@ -93,7 +94,7 @@ public class Route {
     public void setDistance(Float distance) {
         this.distance = distance;
     }
-    public void compareTime(String time) { if (this.time == null || time.compareTo(this.time) < 0) this.time = time; }
+    public void updateTime(String time) { if (this.time == null || time.compareTo(this.time) < 0) this.time = time; }
     public void setTime(String time) { this.time = time; }
     public void setRoutePoints(List<LatLng> routePoints) { this.routePoints = new ArrayList<>(routePoints);}
     private void setCheckpoints(HashMap<LatLng,Section> sections) { this.sections = new HashMap<>(sections); }
@@ -249,7 +250,7 @@ public class Route {
                     currentPolyline.color(Color.parseColor(color));
 
                     // Add middle marker
-                    mMap.addMarker(new MarkerOptions().position(currentSection.getLocationMiddle()).title(currentSection.getTitle())).setIcon(setIcon(context,currentSection.getIcon(),120,160)); //TODO: add icon
+                    mMap.addMarker(new MarkerOptions().position(currentSection.getLocationMiddle()).title(currentSection.getTitle())).setIcon(setIcon(context,currentSection.getIcon(),120,160));
 
                     // Add route points until section finish
                     currentPolyline.add(routePoint);
@@ -345,6 +346,23 @@ public class Route {
         vectorDrawable.draw(canvas);
 
         return BitmapDescriptorFactory.fromBitmap(bitmap);
+    }
+
+    public void setClickable(boolean b) {
+        for (PolylineOptions polylineOptions : polylineSegments) {
+            // if polyline is not a section, set it to clickable
+            if (polylineOptions.getColor() == Color.parseColor("#808080")) {
+                polylineOptions.clickable(b);
+            }
+        }
+    }
+
+    public void setFirebaseId(String firebaseId) {
+        this.firebaseId=firebaseId;
+    }
+
+    public String getFirebaseId() {
+        return firebaseId;
     }
 }
 

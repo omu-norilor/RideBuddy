@@ -62,8 +62,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean marker_selection = false;
     private String last_section = "";
     private FusedLocationProviderClient fusedLocationProviderClient;
-    //Buttons
-    private Button startButton;
+    private Button recordButton;
+    private Button settingsButton;
     private GoogleMap mMap;
     private EditText routeName;
     private LinearLayout saveLayout;
@@ -124,6 +124,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onSuccess() {
                 Log.d("RouteRepo", "DIN PUTEREA ZEILOR INVOC PUTEREA STRABUNILOR SAMBAG PULAN FAMILIA TA ANDROID"+routeRepo.getRouteNames().toString());
                 Log.d("RouteRepo", "User gotten: " + routeRepo.getUser().getEmail() + " " + routeRepo.getUser().getPassword() + " " + routeRepo.getUser().getUsername()) ;
+                routeRepo.setRouteTimes();
+                settingsButton.setText("Hi, " + routeRepo.getUser().getUsername());
                 redrawMap();
             }
 
@@ -136,23 +138,34 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         routeRepo = new RouteRepo(getApplicationContext(), user, isNewUser, callback);
 
         // Start button
-        startButton = findViewById(R.id.startButton);
-        startButton.setBackgroundColor(Color.parseColor("#FFDB91E7"));
-        startButton.setOnClickListener(v -> {
-            if (startButton.getText().toString().equals("Start Route Recording")) {
+        recordButton = findViewById(R.id.startButton);
+        recordButton.setBackgroundColor(Color.parseColor("#FFDB91E7"));
+        recordButton.setOnClickListener(v -> {
+            if (recordButton.getText().toString().equals("Start Route Recording")) {
                 currentRoute.removeRoute();
-                startButton.setText("Stop Route Recording");
-                startButton.setBackgroundColor(Color.parseColor("#FF6750A3"));
-                startButton.setTextColor(Color.WHITE);
+                recordButton.setText("Stop Route Recording");
+                recordButton.setBackgroundColor(Color.parseColor("#FF6750A3"));
+                recordButton.setTextColor(Color.WHITE);
                 recording = true;
             } else {
                 saveLayout.setVisibility(View.VISIBLE);
-                startButton.setText("Start Route Recording");
-                startButton.setBackgroundColor(Color.parseColor("#FFDB91E7"));
-                startButton.setTextColor(Color.BLACK);
+                recordButton.setText("Start Route Recording");
+                recordButton.setBackgroundColor(Color.parseColor("#FFDB91E7"));
+                recordButton.setTextColor(Color.BLACK);
                 recording = false;
             }
         });
+
+        // Settings button
+        settingsButton = findViewById(R.id.userSettingsButton);
+//        settingsButton.setOnClickListener(v -> {
+//            Intent intent1 = new Intent(MainActivity.this, UserSettingsActivity.class);
+//            intent1.putExtra("email", user.getEmail());
+//            intent1.putExtra("password", user.getPassword());
+//            intent1.putExtra("username", user.getUsername());
+//            intent1.putExtra("premiumStatus", user.isPremium());
+//            startActivity(intent1);
+//        });
 
         // Save button
         Button saveRouteButton = findViewById(R.id.save);
@@ -417,7 +430,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             tts.speak("You got off the trail. Run ended in "+totalTime.toString(), TextToSpeech.QUEUE_FLUSH, null);
                         }
                         if (atEnd == true){
-                            currentRoute.compareTime(time);
+                            routeRepo.updateUserTime(currentRoute.getName(),time);
+                            routeRepo.updateRouteTime(currentRoute.getName(),time);
                             Toast.makeText(MainActivity.this, "You finished the route in "+totalTime.toString(), Toast.LENGTH_SHORT).show();
                             tts.speak("You finished the route in "+totalTime.toString(), TextToSpeech.QUEUE_FLUSH, null);
                         }
@@ -530,7 +544,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Button selectButton = routeLayout.findViewById(R.id.routeViewSelectButton);
         TextView routeNameTextView = routeLayout.findViewById(R.id.routeNameTextView);
         TextView distanceTextView = routeLayout.findViewById(R.id.routeDistanceTextView);
-        TextView timeTextView = routeLayout.findViewById(R.id.routeTimeTextView);
+        TextView globalTimeTextView = routeLayout.findViewById(R.id.routeGlobalTimeTextView);
+        TextView personalTimeTextView = routeLayout.findViewById(R.id.routePersonalTimeTextView);
 
         routeNameTextView.setText(routeName);
         String formattedDistance = "";
@@ -539,7 +554,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         else
             formattedDistance = String.format("Distance: %.2f meters", selectedRoute.getDistance()*1000);
         distanceTextView.setText(formattedDistance);
-        timeTextView.setText("Best time: "+selectedRoute.getTime());
+        globalTimeTextView.setText("Best overall time: "+selectedRoute.getTime());
+        personalTimeTextView.setText("Best overall time: "+selectedRoute.getTime());
         //zoom on center of route
 
         List<LatLng> routePoints = selectedRoute.getRoutePoints();
@@ -726,6 +742,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Spinner typeSpinner= editLayout.findViewById(R.id.sectionTypeSpinner);
         Spinner difficultySpinner= editLayout.findViewById(R.id.sectionDifficultySpinner);
         routeNameTextView.setText(routeName);
+        selectedRoute.setClickable(true);
 
         route_selection = true;
         startSectionMarker = null;
@@ -781,6 +798,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
+
         mMap.setOnPolylineClickListener(new GoogleMap.OnPolylineClickListener() {
             @Override
             public void onPolylineClick(Polyline polyline) {
@@ -794,7 +812,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                 startSectionMarker.remove();
                             }
                             // Add the new marker at the closest point on the polyline
-                            startSectionMarker = mMap.addMarker(new MarkerOptions().position(closestPoint).title("Start of"+sectionEditText.getText().toString()));
+                            startSectionMarker = mMap.addMarker(new MarkerOptions().position(closestPoint).title("Start of "+sectionEditText.getText().toString()));
                         }
                         else{
                         if (stopSectionMarker != null) {// make a switch in the ui to switch between start and end
@@ -802,7 +820,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             stopSectionMarker.remove();
                         }
                         // Add the new marker at the closest point on the polyline
-                        stopSectionMarker = mMap.addMarker(new MarkerOptions().position(closestPoint).title("End of"+sectionEditText.getText().toString()));
+                        stopSectionMarker = mMap.addMarker(new MarkerOptions().position(closestPoint).title("End of "+sectionEditText.getText().toString()));
                     }
                     }
                 });
@@ -818,7 +836,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 closeButton.setOnClickListener(null);
             }
         });
-
         switchButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -832,8 +849,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         });
-
-
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -848,6 +863,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     // Check if start and stop are in order and get the middle
                     middleSectionMarker=placement(startSectionMarker,stopSectionMarker,selectedRoute);
                     selectedRoute.addSection(startSectionMarker, middleSectionMarker, stopSectionMarker,type,difficulty,MainActivity.this,mMap);
+                    routeRepo.updateRoute(selectedRoute.getName(),selectedRoute);
                     // Redraw the route
                     startSectionMarker.remove();
                     stopSectionMarker.remove();
@@ -855,6 +871,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     redrawMap();
                     // Clear the edit layout
                     sectionEditText.setText("");
+                    selectedRoute.setClickable(false);
 //                    editLayout.setVisibility(View.GONE);
 //                    mMap.setOnPolylineClickListener(null);
 //                    closeButton.setOnClickListener(null);
