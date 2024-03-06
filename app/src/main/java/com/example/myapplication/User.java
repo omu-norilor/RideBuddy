@@ -74,6 +74,9 @@ public class User {
     }
 
     public List<String> getRoutes() {
+        if (routes == null) {
+            routes = new ArrayList<>();
+        }
         return routes;
     }
 

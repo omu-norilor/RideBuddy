@@ -46,7 +46,6 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -83,6 +82,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private RouteRepo routeRepo;
     private Location currentLocation;
     public LocalTime startTime;
+    SimpleUser selectedUser;
 
     @SuppressLint("SetTextI18n")
     @Override
@@ -129,22 +129,31 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         assert mapFragment != null;
         mapFragment.getMapAsync(this);
 
-        Callback callback = new Callback() {
+        Callback callback = new Callback<String>() {
             @Override
-            public void onSuccess() {
-                Log.d("RouteRepo", "DIN PUTEREA ZEILOR INVOC PUTEREA STRABUNILOR SAMBAG PULAN FAMILIA TA ANDROID"+routeRepo.getRouteNames().toString());
+            public void onSuccess(String result) {
+                Log.d("RouteRepo", "DIN PUTEREA ZEILOR INVOC PUTEREA STRABUNILOR SAMBAG PULAN FAMILIA TA ANDROID");
+                Log.d("RouteRepo", "User gotten: " + routeRepo.getRouteNames().toString()) ;
                 Log.d("RouteRepo", "User gotten: " + routeRepo.getUser().getEmail() + " " + routeRepo.getUser().getPassword() + " " + routeRepo.getUser().getUsername()) ;
-                routeRepo.setRouteTimes();
                 settingsButton.setText("Hi, " + routeRepo.getUser().getUsername());
+
 //                testCluj();
 //                testBaiaMare();
 //                testLangaBlocCluj();
+
+                // Drop the routes that are not public and not seen by the user
+                for (String name : routeRepo.getRouteNames()) {
+                    Route route = routeRepo.getRoute(name);
+                    if(route.getIsPublic()==false &&  route.getUsers().contains(routeRepo.getUser().getEmail())==false)
+                        routeRepo.removeRouteNoDB(name);
+                }
+                routeRepo.setRouteTimes();
                 redrawMap();
             }
 
             @Override
             public void onError(Exception e) {
-                // Handle error
+                Log.d("RouteRepo", "Error: " + e.getMessage());
             }
         };
 
@@ -199,7 +208,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
 
-
         // Discard button
         Button discardRouteButton = findViewById(R.id.discard);
         discardRouteButton.setOnClickListener(new View.OnClickListener() {
@@ -223,8 +231,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         showRouteListButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                redrawMap();
-                showRouteListDialog();
+                openRouteListDialog();
                 selectLayout.setVisibility(View.GONE);
                 editLayout.setVisibility(View.GONE);
                 deleteLayout.setVisibility(View.GONE);
@@ -239,8 +246,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 tts.setLanguage(Locale.ENGLISH);
             }
         });
-
-
     }
 
 
@@ -469,12 +474,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void redrawMap() {
         mMap.clear(); // Clear the map
-
         //Re-draw the saved routes from the repository
         for (String name : routeRepo.getRouteNames()) {
             Route route = routeRepo.getRoute(name);
-            if(route.getIsPublic() || route.getUsers().contains(routeRepo.getUser().getEmail()))
-                route.addRouteToMap(mMap, MainActivity.this);
+            route.addRouteToMap(mMap, MainActivity.this);
         }
     }
 
@@ -486,9 +489,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         return locationRequest;
     }
 
-    private void showRouteListDialog() {
-        // Find the dialog layout in activity_main.xml
-
+    private void openRouteListDialog() {
         // Find elements inside the dialog layout
         EditText searchEditText = searchLayout.findViewById(R.id.searchEditText);
         ListView routesListView = searchLayout.findViewById(R.id.routesListView);
@@ -674,22 +675,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Button grantButton = visibilityLayout.findViewById(R.id.grantVisibilityButton);
 
 
-        List<String> usernames =new ArrayList<>();
-//        routeRepo.getUsernames();
-//
-//        Callback callback = new Callback() {
-//            @Override
-//            public void onSuccess(List<String> names) {
-//                usernames.addAll(names);
-//            }
-//
-//            @Override
-//            public void onError(Exception e) {
-//                // Handle error
-//            }
-//        };
-        // Create an ArrayAdapter to populate the visibility Spinner with data
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, usernames);
+        List<SimpleUser> simpleUsers =new ArrayList<>();
+        List<String> usernames = new ArrayList<>();
+//        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, usernames);
+        VisibilityAdapter adapter = new VisibilityAdapter(this, simpleUsers, routeRepo.getRoute(routeName).getUsers());
+
+
+        Callback callback = new Callback<List<SimpleUser>>() {
+            @Override
+            public void onSuccess(List<SimpleUser> users) {
+                simpleUsers.addAll(users);
+                for (SimpleUser user : simpleUsers) {
+                    usernames.add(user.getUsername());
+                }
+                usersListView.setAdapter(adapter);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Handle error
+            }
+        };
+        routeRepo.getUsers(callback);
+
         // Set up edit text filter for the search EditText
         searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -703,14 +711,34 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             @Override
             public void afterTextChanged(Editable s) {}
         });
+        // Set up a listener for the usersListView
+        usersListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // Grant visibility to the selected user
+                selectedUser = (SimpleUser) parent.getItemAtPosition(position);
+                adapter.setSelectedUsername(adapter.getItem(position).getEmail());
 
+                // Reload the ListView
+                adapter.notifyDataSetChanged();
+            }
+        });
         grantButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // Grant visibility to the selected user
-                String selectedUser = (String) usersListView.getItemAtPosition(usersListView.getCheckedItemPosition());
-                routeRepo.getRoute(routeName).addUser(selectedUser);
+                if (routeRepo.getRoute(routeName).getUsers().contains(selectedUser.getEmail())){
+                    routeRepo.getRoute(routeName).removeUser(selectedUser.getEmail());
+                }
+                else{
+                    routeRepo.getRoute(routeName).addUser(selectedUser.getEmail());
+                }
                 routeRepo.updateRoute(routeName, routeRepo.getRoute(routeName));
+
+                // Reload the ListView
+                adapter.setSelectedUsername("not selected");
+                adapter.notifyDataSetChanged();
+
             }
         });
 
@@ -723,7 +751,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 cancelButton.setOnClickListener(null);
             }
         });
-
     }
 
 
@@ -1006,9 +1033,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         myRunsListView.setAdapter(runAdapter);
 
 
-        if (runTimes.isEmpty()) {
-            Toast.makeText(MainActivity.this, "Cam gol la ture namasatemint", Toast.LENGTH_SHORT).show();
-        }
         // on click listener for the runs
 //        myRunsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 //            @Override

@@ -373,6 +373,10 @@ public class Route {
             }
         }
     }
+
+    public void removeUser(String email) {
+        users.remove(email);
+    }
 }
 
 

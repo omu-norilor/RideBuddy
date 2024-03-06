@@ -554,7 +554,7 @@
         <Button
             android:layout_width="match_parent"
             android:layout_height="51dp"
-            android:text="Grant access"
+            android:text="Grant or revoke access"
             android:id="@+id/grantVisibilityButton"
             android:layout_gravity="center"
             android:background="@drawable/square_light"

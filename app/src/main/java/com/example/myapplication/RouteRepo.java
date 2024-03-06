@@ -41,7 +41,7 @@ public class RouteRepo {
             @Override
             public void onSuccess(Void data) {
                 if (operationsCompleted.incrementAndGet() == 2) {
-                    callback.onSuccess();
+                    callback.onSuccess("repo loaded");
                 }
             }
             @Override
@@ -252,4 +252,25 @@ public class RouteRepo {
     }
 
 
+    public void getUsers(Callback callback) {
+        DBHandler.getUsers(new FirebaseDatabaseHelper.DatabaseCallback<List<SimpleUser>>() {
+            @Override
+            public void onSuccess(List<SimpleUser> data) {
+                // Optionally handle success
+                Log.d("RouteRepo", "Users loaded from database: " + data.size());
+                callback.onSuccess(data);
+            }
+
+            @Override
+            public void onError(Exception e) {
+                // Handle error
+                Log.d("RouteRepo", "Error loading users: " + e.getMessage());
+                callback.onError(e);
+            }
+        });
+    }
+
+    public void removeRouteNoDB(String name) {
+        routes.remove(name);
+    }
 }

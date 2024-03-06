@@ -164,18 +164,18 @@ public class FirebaseDatabaseHelper {
         });
     }
 
-    public void getUsers(final DatabaseCallback<List<User>> callback) {
-        routesReference.addListenerForSingleValueEvent(new ValueEventListener() {
+    public void getUsers(final DatabaseCallback<List<SimpleUser>> callback) {
+        usersReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
-                    List<User> users = new ArrayList<>();
+                    List<SimpleUser> users = new ArrayList<>();
                     for (DataSnapshot routeSnapshot : dataSnapshot.getChildren()) {
                         String firebaseId = routeSnapshot.getKey();
                         User user = routeSnapshot.getValue(User.class);
-                        user.setFirebaseId(firebaseId);;
+                        SimpleUser simpleUser = new SimpleUser(user.getUsername(),user.getEmail(), firebaseId);
                         if (user != null) {
-                            users.add(user);
+                            users.add(simpleUser);
                         }
                     }
                     callback.onSuccess(users);
